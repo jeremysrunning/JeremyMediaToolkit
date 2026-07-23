@@ -46,7 +46,7 @@ public partial class MainWindow : Window
         };
         SourceInitialized += (_, _) => WindowAppearance.EnableDarkTitleBar(this);
         _commandLineFolder = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(Directory.Exists);
-        Loaded += (_, _) =>
+        Loaded += async (_, _) =>
         {
             AboutVersionText.Text = $"Version {AppVersion.Display}  •  Built for the creative workflow";
             _settings = AppSettingsStore.Load(AppSettingsStore.SettingsPath);
@@ -57,17 +57,33 @@ public partial class MainWindow : Window
             if (_commandLineFolder is not null) InputFolder.Text = _commandLineFolder;
             BatchFileList.ItemsSource = _batchFiles;
             LocateTools();
+            await RefreshDependencyHealthAsync();
             RefreshBatchFiles();
             RefreshLuts();
         };
     }
-    private void LocateTools()
+    private void LocateTools(string? configuredPath = null)
     {
         var baseDir = AppContext.BaseDirectory;
-        _ffmpeg = ExecutableLocator.Find("ffmpeg.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffmpeg.exe"), configured: _settings.FfmpegPath);
+        _ffmpeg = ExecutableLocator.Find("ffmpeg.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffmpeg.exe"), configured: configuredPath ?? _settings.FfmpegPath);
         var besideFfmpeg = _ffmpeg is null ? "" : Path.Combine(Path.GetDirectoryName(_ffmpeg)!, "ffprobe.exe");
         _ffprobe = ExecutableLocator.Find("ffprobe.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffprobe.exe"), configured: besideFfmpeg);
         StatusText.Text = _ffmpeg is null ? "FFmpeg not found — configure it in Settings" : $"FFmpeg ready: {_ffmpeg}";
+    }
+    private async Task RefreshDependencyHealthAsync()
+    {
+        DependencySummary.Text = "Checking the tools needed for encoding…";
+        DependencyResults.ItemsSource = null;
+        var report = await DependencyHealthCheck.RunAsync(_ffmpeg, _ffprobe);
+        DependencyResults.ItemsSource = report.Items;
+        DependencySummary.Text = report.Summary;
+        StatusText.Text = report.IsReady ? "Encoding tools ready" : "Encoding setup needs attention — open Settings";
+    }
+
+    private async void CheckDependencies_Click(object sender, RoutedEventArgs e)
+    {
+        LocateTools(SettingsFfmpegPath.Text);
+        await RefreshDependencyHealthAsync();
     }
     private static string? PickFolder(string description, string? initialFolder = null)
     {
@@ -274,7 +290,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true) SettingsFfmpegPath.Text = dialog.FileName;
     }
 
-    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    private async void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
         if (!TryReadEncodingControls(out var encoding, out var encodingError))
         {
@@ -294,6 +310,7 @@ public partial class MainWindow : Window
             _settings = settings;
             ApplySettingsToBatch(settings);
             LocateTools();
+            await RefreshDependencyHealthAsync();
             RefreshBatchFiles();
             var lutCount = RefreshLuts();
             SettingsMessage.Text = $"Settings saved. {lutCount} LUT{(lutCount == 1 ? "" : "s")} available.";
