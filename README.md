@@ -11,6 +11,8 @@ A native C#/.NET 8 WPF desktop utility for Jeremy Running Photography video work
 - High-quality NVIDIA NVENC H.264 (`p7`, full-resolution multipass, adaptive quantization)
 - Normal, salvage, and video-only recovery modes
 - Per-file progress, overall progress, and estimated time remaining
+- Remembers the most recently selected LUT and records batch lifecycle summaries
+- Protects active encodes with finish-current, close-now, and keep-running close options
 - Optional recursive processing and resume/skip support
 - FFprobe metadata inspection
 - Full decode verification with a CSV report

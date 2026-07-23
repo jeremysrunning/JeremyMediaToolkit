@@ -2,7 +2,8 @@
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  Title="Jeremy Media Toolkit" Icon="Assets/Branding/JeremyMediaToolkit.ico"
- Height="820" Width="1180" MinHeight="720" MinWidth="980" WindowStartupLocation="CenterScreen">
+ Height="820" Width="1180" MinHeight="720" MinWidth="980" WindowStartupLocation="CenterScreen"
+ Closing="Window_Closing">
  <Grid Background="{StaticResource WindowBrush}">
   <Grid.ColumnDefinitions><ColumnDefinition Width="224"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
   <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="34"/></Grid.RowDefinitions>
@@ -52,7 +53,7 @@
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,8,8,0">
          <TextBlock Style="{StaticResource FieldLabel}" Text="LUT"/>
-         <DockPanel><Button DockPanel.Dock="Right" Content="Refresh" Click="RefreshLuts_Click"/><ComboBox x:Name="LutSelection" DisplayMemberPath="DisplayName" SelectedValuePath="FilePath"/></DockPanel>
+         <DockPanel><Button DockPanel.Dock="Right" Content="Refresh" Click="RefreshLuts_Click"/><ComboBox x:Name="LutSelection" DisplayMemberPath="DisplayName" SelectedValuePath="FilePath" SelectionChanged="LutSelection_SelectionChanged"/></DockPanel>
         </StackPanel>
         <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,8,0,0">
          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
