@@ -75,6 +75,7 @@
        </StackPanel>
        <StackPanel Grid.Column="1" Orientation="Horizontal">
         <Button x:Name="CancelButton" Style="{StaticResource DangerButton}" Content="Cancel" IsEnabled="False" Click="Cancel_Click"/>
+        <Button x:Name="PauseButton" Content="Pause" IsEnabled="False" Click="Pause_Click"/>
         <Button x:Name="StartButton" Style="{StaticResource PrimaryButton}" Content="Start Encoding" Click="Start_Click"/>
        </StackPanel>
       </Grid>

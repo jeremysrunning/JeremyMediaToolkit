@@ -326,6 +326,8 @@ public partial class MainWindow : Window
     {
         using var process = StartProcess(_ffmpeg!, args, redirectError: true);
         _activeEncodingProcess = process;
+        PauseButton.IsEnabled = true;
+        PauseButton.Content = "Pause";
         try
         {
             var errors = new StringBuilder();
@@ -343,12 +345,15 @@ public partial class MainWindow : Window
             }
             await process.WaitForExitAsync(token);
             await errTask;
-            if (process.ExitCode != 0) AppendLog(errors.ToString());
+            if (process.ExitCode != 0 && !detailedOutput) AppendLog(errors.ToString());
             progress(100);
             return process.ExitCode;
         }
         finally
         {
+            _encodingPause.Clear();
+            PauseButton.IsEnabled = false;
+            PauseButton.Content = "Pause";
             if (ReferenceEquals(_activeEncodingProcess, process)) _activeEncodingProcess = null;
         }
     }
@@ -369,6 +374,11 @@ public partial class MainWindow : Window
     {
         StartButton.IsEnabled = !running;
         CancelButton.IsEnabled = running;
+        if (!running)
+        {
+            PauseButton.IsEnabled = false;
+            PauseButton.Content = "Pause";
+        }
         SetBatchStatus(running ? BatchStatus.Encoding : BatchStatus.Ready);
     }
 
@@ -380,6 +390,32 @@ public partial class MainWindow : Window
         BatchStateBorder.Background = (System.Windows.Media.Brush)FindResource(presentation.BackgroundResource);
         BatchStateBorder.BorderBrush = (System.Windows.Media.Brush)FindResource(presentation.BorderResource);
     }
+    private void Pause_Click(object sender, RoutedEventArgs e)
+    {
+        var process = _activeEncodingProcess;
+        if (process is null) return;
+
+        if (_encodingPause.IsPaused)
+        {
+            ResumeEncoding(process, "Encoding resumed by user.");
+            return;
+        }
+
+        if (!_encodingPause.Pause(process)) return;
+        if (_batchStopwatch?.IsRunning == true) _batchStopwatch.Stop();
+        PauseButton.Content = "Resume";
+        SetBatchStatus(BatchStatus.Paused);
+        AppendLog("Encoding paused by user.");
+    }
+
+    private void ResumeEncoding(Process? process, string logMessage)
+    {
+        _encodingPause.Resume(process);
+        if (_batchStopwatch?.IsRunning == false) _batchStopwatch.Start();
+        PauseButton.Content = "Pause";
+        SetBatchStatus(BatchStatus.Encoding);
+        AppendLog(logMessage);
+    }
     private void Cancel_Click(object sender, RoutedEventArgs e) => CancelActiveEncoding();
 
     private void Window_Closing(object? sender, CancelEventArgs e)
@@ -388,12 +424,14 @@ public partial class MainWindow : Window
 
         e.Cancel = true;
         var pausedProcess = _activeEncodingProcess;
-        var processPaused = _encodingPause.Pause(pausedProcess);
-        var timerPaused = processPaused && _batchStopwatch?.IsRunning == true;
-        if (timerPaused) _batchStopwatch!.Stop();
-        if (processPaused)
+        var wasAlreadyPaused = _encodingPause.IsPaused;
+        var processPaused = wasAlreadyPaused || _encodingPause.Pause(pausedProcess);
+        var pausedByDialog = processPaused && !wasAlreadyPaused;
+        if (pausedByDialog && _batchStopwatch?.IsRunning == true) _batchStopwatch.Stop();
+        if (pausedByDialog)
         {
             SetBatchStatus(BatchStatus.Paused);
+            PauseButton.Content = "Resume";
             AppendDetailedLog("Encoding paused while the close options are open.");
         }
 
@@ -408,12 +446,11 @@ public partial class MainWindow : Window
             return;
         }
 
-        _encodingPause.Resume(pausedProcess);
-        if (timerPaused) _batchStopwatch?.Start();
-        if (processPaused)
+        if (processPaused && EncodingClosePolicy.ShouldResumeAfterDialog(wasAlreadyPaused, dialog.Choice))
         {
-            SetBatchStatus(BatchStatus.Encoding);
-            AppendDetailedLog("Encoding resumed.");
+            ResumeEncoding(pausedProcess, dialog.Choice == EncodingCloseChoice.CloseAfterCurrent
+                ? "Encoding resumed to finish the current file before closing."
+                : "Encoding resumed.");
         }
 
         if (dialog.Choice == EncodingCloseChoice.CloseAfterCurrent)
