@@ -215,6 +215,9 @@ public partial class MainWindow : Window
             }
             var sourceDuration = TimeSpan.FromSeconds(durations.Values.Where(value => value > 0).Sum());
             AppendLog(BatchLogFormatter.Started(total, outputRoot, resolution, recovery, sourceDuration, startedAt));
+            AppendDetailedLog($"LUT: {SelectedLutPath}");
+            AppendDetailedLog($"Input folder: {InputFolder.Text}");
+            AppendDetailedLog($"Scanning subfolders: {(Recursive.IsChecked == true ? "Yes" : "No")}; skip completed files: {(SkipExisting.IsChecked == true ? "Yes" : "No")}");
 
             var completed = 0;
             foreach (var input in files)
@@ -227,6 +230,9 @@ public partial class MainWindow : Window
                 _batchProgress.StartFile();
                 FileProgress.Value = _batchProgress.FilePercent;
                 CurrentFileText.Text = $"{completed + 1}/{total}: {Path.GetFileName(input)}";
+                AppendDetailedLog($"File {completed + 1} of {total}: {input}");
+                AppendDetailedLog($"Output: {output}");
+                AppendDetailedLog($"Detected duration: {FormatDuration(durations[input])}");
 
                 if (SkipExisting.IsChecked == true && File.Exists(output) && new FileInfo(output).Length > 0)
                 {
@@ -242,8 +248,10 @@ public partial class MainWindow : Window
                     continue;
                 }
 
-                var args = FfmpegCommandBuilder.Encode(input, output, SelectedLutPath!, recovery, resolution);
-                var exit = await RunFfmpegProgressAsync(args, durations[input], p =>
+                var detailedOutput = ShowEncodingDetails.IsChecked == true;
+                var args = FfmpegCommandBuilder.Encode(input, output, SelectedLutPath!, recovery, resolution, detailedOutput);
+                if (detailedOutput) AppendLog($"[App] Starting FFmpeg: {FormatCommand(_ffmpeg!, args)}");
+                var exit = await RunFfmpegProgressAsync(args, durations[input], detailedOutput, p =>
                 {
                     _batchProgress.ReportFileProgress(p);
                     FileProgress.Value = _batchProgress.FilePercent;
@@ -310,7 +318,7 @@ public partial class MainWindow : Window
     private string? SelectedLutPath => (LutSelection.SelectedItem as LutOption)?.FilePath;
 
 
-    private async Task<int> RunFfmpegProgressAsync(List<string> args, double duration, Action<double> progress, CancellationToken token)
+    private async Task<int> RunFfmpegProgressAsync(List<string> args, double duration, bool detailedOutput, Action<double> progress, CancellationToken token)
     {
         using var process = StartProcess(_ffmpeg!, args, redirectError: true);
         _activeEncodingProcess = process;
@@ -319,7 +327,11 @@ public partial class MainWindow : Window
             var errors = new StringBuilder();
             var errTask = Task.Run(async () =>
             {
-                while (await process.StandardError.ReadLineAsync(token) is { } line) errors.AppendLine(line);
+                while (await process.StandardError.ReadLineAsync(token) is { } line)
+                {
+                    errors.AppendLine(line);
+                    if (detailedOutput) AppendLog($"[FFmpeg] {line}");
+                }
             }, token);
             while (await process.StandardOutput.ReadLineAsync(token) is { } line)
             {
@@ -401,6 +413,22 @@ public partial class MainWindow : Window
             LogBox.ScrollToEnd();
         });
     }
+
+    private void AppendDetailedLog(string text)
+    {
+        if (ShowEncodingDetails.IsChecked == true) AppendLog($"[App] {text}");
+    }
+
+    private static string FormatDuration(double seconds) =>
+        seconds > 0 ? TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss\.fff") : "Unavailable";
+
+    private static string FormatCommand(string executable, IEnumerable<string> args) =>
+        QuoteCommandArgument(executable) + " " + string.Join(" ", args.Select(QuoteCommandArgument));
+
+    private static string QuoteCommandArgument(string value) =>
+        value.Any(char.IsWhiteSpace) || value.Contains('"')
+            ? "\"" + value.Replace("\"", "\\\"") + "\""
+            : value;
 
     private async Task<double> ProbeDurationAsync(string file, CancellationToken token)
     {

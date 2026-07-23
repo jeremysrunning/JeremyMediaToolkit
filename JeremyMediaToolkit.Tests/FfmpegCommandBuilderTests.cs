@@ -45,6 +45,22 @@ public sealed class FfmpegCommandBuilderTests
     }
 
     [Fact]
+    public void Encode_DetailedOutputRequestsVerboseFfmpegMessages()
+    {
+        var args = FfmpegCommandBuilder.Encode("in", "out", "lut", RecoveryStrategy.Normal, OutputResolution.Source, detailedOutput: true);
+
+        AssertContainsSequence(args, "-loglevel", "verbose");
+    }
+
+    [Fact]
+    public void Encode_NormalOutputUsesStandardFfmpegMessages()
+    {
+        var args = FfmpegCommandBuilder.Encode("in", "out", "lut", RecoveryStrategy.Normal, OutputResolution.Source);
+
+        AssertContainsSequence(args, "-loglevel", "info");
+    }
+
+    [Fact]
     public void ProbeAndInspectArgumentsTargetProvidedFile()
     {
         Assert.Equal(["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "clip.mov"], FfmpegCommandBuilder.ProbeDuration("clip.mov"));

@@ -2,11 +2,11 @@ namespace JeremyMediaToolkit;
 
 internal static class FfmpegCommandBuilder
 {
-    public static List<string> Encode(string input, string output, string lut, RecoveryStrategy recovery, OutputResolution resolution)
+    public static List<string> Encode(string input, string output, string lut, RecoveryStrategy recovery, OutputResolution resolution, bool detailedOutput = false)
     {
         if (!Enum.IsDefined(recovery)) throw new ArgumentOutOfRangeException(nameof(recovery));
         if (!Enum.IsDefined(resolution)) throw new ArgumentOutOfRangeException(nameof(resolution));
-        var args = new List<string> { "-hide_banner", "-y" };
+        var args = new List<string> { "-hide_banner", "-loglevel", detailedOutput ? "verbose" : "info", "-y" };
         if (recovery != RecoveryStrategy.Normal)
             args.AddRange(["-fflags", "+discardcorrupt+genpts", "-err_detect", "ignore_err"]);
         args.AddRange(["-i", input, "-map", "0:v:0"]);

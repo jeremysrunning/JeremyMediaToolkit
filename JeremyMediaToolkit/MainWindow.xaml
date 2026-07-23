@@ -93,7 +93,10 @@
        </Border>
        <Border Grid.Row="1" Style="{StaticResource Card}">
         <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-         <TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,10" Text="Activity Log"/>
+         <DockPanel Margin="4,0,4,10">
+          <CheckBox x:Name="ShowEncodingDetails" DockPanel.Dock="Right" Margin="12,0,0,0" Content="Show encoding details" ToolTip="Include technical encoding messages from FFmpeg and additional file details in the activity log."/>
+          <TextBlock Style="{StaticResource SectionTitle}" Text="Activity Log"/>
+         </DockPanel>
          <TextBox Grid.Row="1" x:Name="LogBox" Height="150" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" VerticalContentAlignment="Top" HorizontalContentAlignment="Left" VerticalScrollBarVisibility="Auto"/>
         </Grid>
        </Border>
