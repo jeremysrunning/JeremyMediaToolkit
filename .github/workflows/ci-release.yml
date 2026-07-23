@@ -1,0 +1,76 @@
+name: Test and package
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore .\LightflowStudio.Tests\LightflowStudio.Tests.csproj
+      - name: Test
+        run: dotnet test .\LightflowStudio.Tests\LightflowStudio.Tests.csproj -c Release --no-restore --logger "trx;LogFileName=tests.trx"
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+          if-no-files-found: error
+          retention-days: 14
+
+  package:
+    name: Windows installer and portable package
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Install installer compiler
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+      - name: Build verified release artifacts
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "" }
+          .\scripts\Build-Release.ps1 -Version $version
+      - name: Upload installer, portable ZIP, and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: lightflow-studio-windows
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lightflow-studio-windows
+          path: dist
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" dist/* --verify-tag --generate-notes --title "Lightflow Studio ${{ github.ref_name }}"

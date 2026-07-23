@@ -1,0 +1,10 @@
+{
+  "version": "8.1.2-30-g45f1910444",
+  "releaseTag": "autobuild-2026-07-23-14-16",
+  "archiveName": "ffmpeg-n8.1.2-30-g45f1910444-win64-lgpl-8.1.zip",
+  "downloadUrl": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-23-14-16/ffmpeg-n8.1.2-30-g45f1910444-win64-lgpl-8.1.zip",
+  "sha256": "0c6dc759eb1c70804ca04e11d83c583a6b03ae0630474f862e97400c715c6376",
+  "sourceUrl": "https://github.com/FFmpeg/FFmpeg/tree/45f1910444",
+  "buildProjectUrl": "https://github.com/BtbN/FFmpeg-Builds",
+  "license": "LGPL-2.1-or-later"
+}

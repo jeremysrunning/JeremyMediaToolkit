@@ -1,5 +1,8 @@
 **/bin/
 **/obj/
 publish/
+artifacts/
+dist/
+.cache/
 *.user
 *.suo
