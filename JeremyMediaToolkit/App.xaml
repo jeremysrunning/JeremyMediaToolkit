@@ -14,6 +14,7 @@
   <Color x:Key="RedColor">#FF3F46</Color>
   <Color x:Key="MagentaColor">#C42D78</Color>
   <Color x:Key="SuccessColor">#45D09E</Color>
+  <Color x:Key="WarningColor">#F2C94C</Color>
 
   <SolidColorBrush x:Key="WindowBrush" Color="{StaticResource WindowColor}"/>
   <SolidColorBrush x:Key="NavigationBrush" Color="{StaticResource NavigationColor}"/>
@@ -26,6 +27,13 @@
   <SolidColorBrush x:Key="RedBrush" Color="{StaticResource RedColor}"/>
   <SolidColorBrush x:Key="MagentaBrush" Color="{StaticResource MagentaColor}"/>
   <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+  <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+  <SolidColorBrush x:Key="ReadyBadgeBackgroundBrush" Color="#17241F"/>
+  <SolidColorBrush x:Key="ReadyBadgeBorderBrush" Color="#285845"/>
+  <SolidColorBrush x:Key="EncodingBadgeBackgroundBrush" Color="#2B1E18"/>
+  <SolidColorBrush x:Key="EncodingBadgeBorderBrush" Color="#6B3D24"/>
+  <SolidColorBrush x:Key="PausedBadgeBackgroundBrush" Color="#292515"/>
+  <SolidColorBrush x:Key="PausedBadgeBorderBrush" Color="#756526"/>
   <LinearGradientBrush x:Key="BrandGradient" StartPoint="0,0" EndPoint="1,1">
    <GradientStop Color="{StaticResource OrangeColor}" Offset="0"/>
    <GradientStop Color="{StaticResource RedColor}" Offset="0.48"/>

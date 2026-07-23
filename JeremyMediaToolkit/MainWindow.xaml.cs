@@ -369,8 +369,16 @@ public partial class MainWindow : Window
     {
         StartButton.IsEnabled = !running;
         CancelButton.IsEnabled = running;
-        BatchStateText.Text = running ? "ENCODING" : "READY";
-        BatchStateText.Foreground = (System.Windows.Media.Brush)FindResource(running ? "OrangeBrush" : "SuccessBrush");
+        SetBatchStatus(running ? BatchStatus.Encoding : BatchStatus.Ready);
+    }
+
+    private void SetBatchStatus(BatchStatus status)
+    {
+        var presentation = BatchStatusPresentation.For(status);
+        BatchStateText.Text = presentation.Text;
+        BatchStateText.Foreground = (System.Windows.Media.Brush)FindResource(presentation.ForegroundResource);
+        BatchStateBorder.Background = (System.Windows.Media.Brush)FindResource(presentation.BackgroundResource);
+        BatchStateBorder.BorderBrush = (System.Windows.Media.Brush)FindResource(presentation.BorderResource);
     }
     private void Cancel_Click(object sender, RoutedEventArgs e) => CancelActiveEncoding();
 
@@ -383,7 +391,11 @@ public partial class MainWindow : Window
         var processPaused = _encodingPause.Pause(pausedProcess);
         var timerPaused = processPaused && _batchStopwatch?.IsRunning == true;
         if (timerPaused) _batchStopwatch!.Stop();
-        if (processPaused) AppendDetailedLog("Encoding paused while the close options are open.");
+        if (processPaused)
+        {
+            SetBatchStatus(BatchStatus.Paused);
+            AppendDetailedLog("Encoding paused while the close options are open.");
+        }
 
         var dialog = new EncodingCloseDialog { Owner = this };
         dialog.ShowDialog();
@@ -398,7 +410,11 @@ public partial class MainWindow : Window
 
         _encodingPause.Resume(pausedProcess);
         if (timerPaused) _batchStopwatch?.Start();
-        if (processPaused) AppendDetailedLog("Encoding resumed.");
+        if (processPaused)
+        {
+            SetBatchStatus(BatchStatus.Encoding);
+            AppendDetailedLog("Encoding resumed.");
+        }
 
         if (dialog.Choice == EncodingCloseChoice.CloseAfterCurrent)
         {
