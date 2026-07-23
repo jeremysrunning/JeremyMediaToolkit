@@ -61,6 +61,24 @@ public class UiLayoutTests
         Assert.Equal("False", (string?)Named(document, "StartButton").Attribute("IsEnabled"));
     }
 
+    [Fact]
+    public void BatchFileTable_ConstrainsRowsToTheVisibleColumnWidth()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var list = Named(document, "BatchFileList");
+
+        Assert.Equal("Disabled", list.Attributes()
+            .Single(attribute => attribute.Name.LocalName == "ScrollViewer.HorizontalScrollBarVisibility").Value);
+        Assert.Equal("Stretch", (string?)list.Attribute("HorizontalContentAlignment"));
+    }
+
+    [Fact]
+    public void MainWindow_ProvidesEnoughWidthForTheBatchFileColumns()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+
+        Assert.True(double.Parse((string?)document.Root!.Attribute("MinWidth") ?? "0") >= 1120);
+    }
     private static XElement Named(XDocument document, string name) =>
         document.Descendants().Single(element => element.Attributes().Any(attribute =>
             attribute.Name.LocalName == "Name" && attribute.Value == name));
