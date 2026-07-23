@@ -43,6 +43,12 @@ Open PowerShell in this folder, then run:
 powershell.exe -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
+Run the unit test suite with:
+
+```powershell
+dotnet test .\JeremyMediaToolkit.Tests\JeremyMediaToolkit.Tests.csproj
+```
+
 For a self-contained, single-file Windows build:
 
 ```powershell
