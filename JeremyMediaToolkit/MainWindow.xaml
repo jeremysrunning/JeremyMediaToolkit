@@ -1,96 +1,168 @@
-<Window x:Class="JeremyMediaToolkit.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Jeremy Media Toolkit v0.2" Height="780" Width="1040"
- MinHeight="680" MinWidth="900" WindowStartupLocation="CenterScreen">
- <Window.Resources>
-  <Style TargetType="Button"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="10,5"/></Style>
-  <Style TargetType="TextBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
-  <Style TargetType="ComboBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
- </Window.Resources>
- <Grid Margin="14">
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <TextBlock Margin="4,0,4,12" FontSize="25" FontWeight="SemiBold" Text="Jeremy Media Toolkit"/>
-  <TabControl Grid.Row="1" x:Name="MainTabs">
-   <TabItem Header="Batch Encode"><ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="12">
-    <Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <Grid.RowDefinitions>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
-    </Grid.RowDefinitions>
-    <TextBlock Grid.Row="0" Margin="4" VerticalAlignment="Center" Text="Video folder"/><TextBox x:Name="InputFolder" Grid.Row="0" Grid.Column="1"/>
-    <Button Grid.Row="0" Grid.Column="2" Content="Browse…" Click="BrowseInput_Click"/>
-    <TextBlock Grid.Row="1" Margin="4" VerticalAlignment="Center" Text="LUT"/><ComboBox x:Name="LutSelection" Grid.Row="1" Grid.Column="1"
-     DisplayMemberPath="DisplayName" SelectedValuePath="FilePath"/>
-    <Button Grid.Row="1" Grid.Column="2" Content="Refresh" Click="RefreshLuts_Click"/>
-    <TextBlock Grid.Row="2" Margin="4" VerticalAlignment="Center" Text="Resolution"/><ComboBox x:Name="Resolution" Grid.Row="2" Grid.Column="1" SelectedIndex="0">
-     <ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox>
-    <TextBlock Grid.Row="3" Margin="4" VerticalAlignment="Center" Text="Recovery mode"/><ComboBox x:Name="RecoveryMode" Grid.Row="3" Grid.Column="1" SelectedIndex="0">
-     <ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox>
-    <CheckBox x:Name="Recursive" Grid.Row="4" Grid.Column="1" Margin="8,6" Content="Include subfolders"/>
-    <CheckBox x:Name="SkipExisting" Grid.Row="5" Grid.Column="1" Margin="8,6" IsChecked="True" Content="Skip completed output files"/>
-    <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,4">
-     <Button x:Name="StartButton" Content="Start Encoding" Click="Start_Click"/><Button x:Name="CancelButton" Content="Cancel" IsEnabled="False" Click="Cancel_Click"/>
+<Window x:Class="JeremyMediaToolkit.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Jeremy Media Toolkit" Icon="Assets/Branding/JeremyMediaToolkit.ico"
+ Height="820" Width="1180" MinHeight="720" MinWidth="980" WindowStartupLocation="CenterScreen">
+ <Grid Background="{StaticResource WindowBrush}">
+  <Grid.ColumnDefinitions><ColumnDefinition Width="224"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="34"/></Grid.RowDefinitions>
+
+  <Border Grid.RowSpan="2" Background="{StaticResource NavigationBrush}" BorderBrush="#252832" BorderThickness="0,0,1,0">
+   <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel Margin="20,20,20,12">
+     <Image Source="Assets/Branding/jr-glow-source.png" Width="112" Height="112" Stretch="Uniform" HorizontalAlignment="Left"/>
+     <TextBlock Margin="2,10,0,0" Foreground="{StaticResource TextBrush}" FontSize="17" FontWeight="SemiBold" Text="Jeremy Media Toolkit"/>
+     <TextBlock Margin="2,3,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Text="CREATIVE VIDEO WORKFLOW"/>
     </StackPanel>
-    <TextBlock Grid.Row="7" Grid.ColumnSpan="3" x:Name="CurrentFileText" Margin="4" Text="Ready" TextTrimming="CharacterEllipsis"/>
-    <ProgressBar Grid.Row="8" Grid.ColumnSpan="3" x:Name="FileProgress" Height="18" Margin="4" Maximum="100"/>
-    <ProgressBar Grid.Row="9" Grid.ColumnSpan="3" x:Name="BatchProgress" Height="18" Margin="4" Maximum="100"/>
-    <TextBlock Grid.Row="10" Grid.ColumnSpan="3" x:Name="EtaText" Margin="4"/>
-    <TextBox Grid.Row="11" Grid.ColumnSpan="3" x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
-   </Grid></ScrollViewer></TabItem>
-   <TabItem Header="Media Tools"><Grid Margin="12">
-    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-    <TextBlock Margin="4" TextWrapping="Wrap" Text="Select a video file, then inspect its metadata, verify decoding, rewrap it without transcoding, or create a 1080p editing proxy."/>
-    <DockPanel Grid.Row="1"><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseMedia_Click"/><TextBox x:Name="MediaPath"/></DockPanel>
-    <WrapPanel Grid.Row="2"><Button Content="Inspect Metadata" Click="Inspect_Click"/><Button Content="Verify / CSV Report" Click="Verify_Click"/>
-     <Button Content="Lossless Rewrap" Click="Rewrap_Click"/><Button Content="Create 1080p Proxy" Click="Proxy_Click"/><Button Content="Generate Contact Sheet" Click="ContactSheet_Click"/></WrapPanel>
-    <TextBox Grid.Row="3" x:Name="ToolsOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
-   </Grid></TabItem>
-   <TabItem Header="Settings"><ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="22" MaxWidth="850" HorizontalAlignment="Stretch">
-    <Grid.ColumnDefinitions><ColumnDefinition Width="190"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <Grid.RowDefinitions>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
-    <TextBlock Grid.Row="0" Grid.ColumnSpan="3" FontSize="20" FontWeight="SemiBold" Text="Application Settings"/>
-    <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Margin="0,5,0,14" Foreground="DimGray" TextWrapping="Wrap"
-     Text="Choose the folders, tools, and defaults that should be restored whenever the application starts."/>
-    <Separator Grid.Row="2" Grid.ColumnSpan="3" Margin="0,0,0,10"/>
-    <TextBlock Grid.Row="3" Grid.ColumnSpan="3" Margin="4,2,4,6" FontSize="16" FontWeight="SemiBold" Text="Folders"/>
-    <TextBlock Grid.Row="4" Margin="4" VerticalAlignment="Center" Text="Default video folder"/><TextBox x:Name="SettingsDefaultVideoFolder" Grid.Row="4" Grid.Column="1"/>
-    <Button Grid.Row="4" Grid.Column="2" Content="Browse…" Click="BrowseDefaultVideoFolder_Click"/>
-    <TextBlock Grid.Row="5" Margin="4" VerticalAlignment="Center" Text="LUT library folder"/><TextBox x:Name="SettingsLutFolder" Grid.Row="5" Grid.Column="1"/>
-    <Button Grid.Row="5" Grid.Column="2" Content="Browse…" Click="BrowseSettingsLutFolder_Click"/>
-    <Separator Grid.Row="6" Grid.ColumnSpan="3" Margin="0,12,0,10"/>
-    <TextBlock Grid.Row="7" Grid.ColumnSpan="3" Margin="4,2,4,6" FontSize="16" FontWeight="SemiBold" Text="Batch Encode Defaults"/>
-    <TextBlock Grid.Row="8" Margin="4" VerticalAlignment="Center" Text="Resolution"/><ComboBox x:Name="SettingsResolution" Grid.Row="8" Grid.Column="1">
-     <ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox>
-    <TextBlock Grid.Row="9" Margin="4" VerticalAlignment="Center" Text="Recovery mode"/><ComboBox x:Name="SettingsRecoveryMode" Grid.Row="9" Grid.Column="1">
-     <ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox>
-    <StackPanel Grid.Row="10" Grid.Column="1" Margin="4">
-     <CheckBox x:Name="SettingsRecursive" Margin="4" Content="Include subfolders by default"/>
-     <CheckBox x:Name="SettingsSkipExisting" Margin="4" Content="Skip completed output files by default"/>
+    <Border Grid.Row="1" Height="1" Margin="18,0,18,10" Background="#282C35"/>
+    <ListBox Grid.Row="2" x:Name="Navigation" Style="{StaticResource NavigationList}" ItemContainerStyle="{StaticResource NavigationItem}"
+     SelectedIndex="{Binding ElementName=MainTabs, Path=SelectedIndex, Mode=TwoWay}">
+     <ListBoxItem IsSelected="True"><StackPanel Orientation="Horizontal"><TextBlock Width="28" FontSize="16" Text="▶"/><TextBlock Text="Batch Encode"/></StackPanel></ListBoxItem>
+     <ListBoxItem><StackPanel Orientation="Horizontal"><TextBlock Width="28" FontSize="16" Text="◇"/><TextBlock Text="Media Tools"/></StackPanel></ListBoxItem>
+     <ListBoxItem><StackPanel Orientation="Horizontal"><TextBlock Width="28" FontSize="16" Text="✦"/><TextBlock Text="Premiere Helper"/></StackPanel></ListBoxItem>
+     <ListBoxItem><StackPanel Orientation="Horizontal"><TextBlock Width="28" FontSize="16" Text="⚙"/><TextBlock Text="Settings"/></StackPanel></ListBoxItem>
+     <ListBoxItem><StackPanel Orientation="Horizontal"><TextBlock Width="28" FontSize="16" Text="●"/><TextBlock Text="About"/></StackPanel></ListBoxItem>
+    </ListBox>
+    <StackPanel Grid.Row="3" Margin="20,12,20,20">
+     <Border Height="2" Margin="0,0,0,10" Background="{StaticResource BrandGradient}" CornerRadius="1"/>
+     <TextBlock Foreground="{StaticResource MutedTextBrush}" FontSize="11" Text="JEREMY RUNNING PHOTOGRAPHY" TextWrapping="Wrap"/>
     </StackPanel>
-    <Separator Grid.Row="11" Grid.ColumnSpan="3" Margin="0,12,0,10"/>
-    <TextBlock Grid.Row="12" Grid.ColumnSpan="3" Margin="4,2,4,6" FontSize="16" FontWeight="SemiBold" Text="External Tools"/>
-    <TextBlock Grid.Row="13" Margin="4" VerticalAlignment="Center" Text="FFmpeg executable"/><TextBox x:Name="SettingsFfmpegPath" Grid.Row="13" Grid.Column="1"/>
-    <Button Grid.Row="13" Grid.Column="2" Content="Browse…" Click="BrowseSettingsFfmpeg_Click"/>
-    <TextBlock Grid.Row="14" Grid.Column="1" Margin="6,0,4,10" Foreground="DimGray" TextWrapping="Wrap"
-     Text="Leave blank to use a bundled FFmpeg or the first copy available on PATH. FFprobe is detected beside FFmpeg or on PATH."/>
-    <DockPanel Grid.Row="15" Grid.ColumnSpan="3" Margin="0,8,0,0">
-     <TextBlock x:Name="SettingsMessage" VerticalAlignment="Center" Foreground="DimGray"/>
-     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-      <Button Content="Restore Defaults" Click="ResetSettings_Click"/><Button Content="Save Settings" Click="SaveSettings_Click"/>
-     </StackPanel>
-    </DockPanel>
-   </Grid></ScrollViewer></TabItem>
-   <TabItem Header="Premiere Helper"><StackPanel Margin="18">
-    <TextBlock FontSize="18" FontWeight="SemiBold" Text="Experimental Premiere timeline clip exporter"/>
-    <TextBlock Margin="0,8" TextWrapping="Wrap" Text="The included ExtendScript helper exports each clip on video track V1 as an individual file using sequence In/Out points. Visible timeline effects and adjustment layers are included. Test on a duplicate project first."/>
-    <Button HorizontalAlignment="Left" Content="Open Premiere Helper Folder" Click="OpenPremiere_Click"/>
-   </StackPanel></TabItem>
+   </Grid>
+  </Border>
+
+  <TabControl Grid.Column="1" x:Name="MainTabs" Style="{StaticResource ContentOnlyTabs}" SelectedIndex="0">
+   <TabItem>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+     <Grid Margin="28,24,28,28">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <StackPanel Margin="2,0,0,20">
+       <TextBlock Style="{StaticResource PageTitle}" Text="Batch Encode"/>
+       <TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Apply a LUT and create consistent, edit-ready H.264 files from an entire folder."/>
+      </StackPanel>
+
+      <Border Grid.Row="1" Style="{StaticResource Card}">
+       <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Batch Setup"/>
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+         <TextBlock Style="{StaticResource FieldLabel}" Text="VIDEO FOLDER"/>
+         <DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseInput_Click"/><TextBox x:Name="InputFolder"/></DockPanel>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,8,8,0">
+         <TextBlock Style="{StaticResource FieldLabel}" Text="LUT"/>
+         <DockPanel><Button DockPanel.Dock="Right" Content="Refresh" Click="RefreshLuts_Click"/><ComboBox x:Name="LutSelection" DisplayMemberPath="DisplayName" SelectedValuePath="FilePath"/></DockPanel>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,8,0,0">
+         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="0"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
+          <StackPanel Grid.Column="1" Margin="6,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="RecoveryMode" SelectedIndex="0"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
+         </Grid>
+         <WrapPanel Margin="4,6,0,0"><CheckBox x:Name="Recursive" Content="Include subfolders"/><CheckBox x:Name="SkipExisting" IsChecked="True" Content="Skip completed files"/></WrapPanel>
+        </StackPanel>
+       </Grid>
+      </Border>
+
+      <Grid Grid.Row="2" Margin="0,0,0,14">
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Border x:Name="BatchStateBorder" Background="#17241F" BorderBrush="#285845" BorderThickness="1" CornerRadius="12" Padding="10,4" Margin="2,0,8,0">
+         <TextBlock x:Name="BatchStateText" Foreground="{StaticResource SuccessBrush}" FontSize="11" Text="READY"/>
+        </Border>
+        <TextBlock x:Name="CurrentFileText" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="Choose a folder to begin" TextTrimming="CharacterEllipsis"/>
+       </StackPanel>
+       <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button x:Name="CancelButton" Style="{StaticResource DangerButton}" Content="Cancel" IsEnabled="False" Click="Cancel_Click"/>
+        <Button x:Name="StartButton" Style="{StaticResource PrimaryButton}" Content="Start Encoding" Click="Start_Click"/>
+       </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="3">
+       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+       <Border Style="{StaticResource Card}">
+        <Grid>
+         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+         <TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Encoding Progress"/>
+         <DockPanel Grid.Row="1" Margin="4,0,4,4"><TextBlock Foreground="{StaticResource MutedTextBrush}" Text="Current file"/><TextBlock DockPanel.Dock="Right" Foreground="{StaticResource OrangeBrush}" Text="ACTIVE"/></DockPanel>
+         <ProgressBar Grid.Row="2" x:Name="FileProgress" Style="{StaticResource FileProgressStyle}" Maximum="100"/>
+         <DockPanel Grid.Row="3" Margin="4,14,4,4"><TextBlock Foreground="{StaticResource MutedTextBrush}" Text="Overall batch"/><TextBlock DockPanel.Dock="Right" x:Name="EtaText" Foreground="{StaticResource MutedTextBrush}"/></DockPanel>
+         <ProgressBar Grid.Row="4" x:Name="BatchProgress" Maximum="100"/>
+        </Grid>
+       </Border>
+       <Border Grid.Row="1" Style="{StaticResource Card}">
+        <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+         <TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,10" Text="Activity Log"/>
+         <TextBox Grid.Row="1" x:Name="LogBox" Height="150" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" VerticalScrollBarVisibility="Auto"/>
+        </Grid>
+       </Border>
+      </Grid>
+     </Grid>
+    </ScrollViewer>
+   </TabItem>
+
+   <TabItem>
+    <Grid Margin="28,24,28,28">
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <StackPanel Margin="2,0,0,20"><TextBlock Style="{StaticResource PageTitle}" Text="Media Tools"/><TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Inspect, verify, rewrap, proxy, or create a visual contact sheet from one media file."/></StackPanel>
+     <Border Grid.Row="1" Style="{StaticResource Card}">
+      <StackPanel><TextBlock Style="{StaticResource FieldLabel}" Text="MEDIA FILE"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseMedia_Click"/><TextBox x:Name="MediaPath"/></DockPanel></StackPanel>
+     </Border>
+     <Border Grid.Row="2" Style="{StaticResource Card}">
+      <StackPanel><TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,10" Text="Choose an action"/>
+       <WrapPanel><Button Content="Inspect Metadata" Click="Inspect_Click"/><Button Content="Verify / CSV Report" Click="Verify_Click"/><Button Content="Lossless Rewrap" Click="Rewrap_Click"/><Button Content="Create 1080p Proxy" Click="Proxy_Click"/><Button Content="Generate Contact Sheet" Click="ContactSheet_Click"/></WrapPanel>
+      </StackPanel>
+     </Border>
+     <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,10" Text="Tool Output"/><TextBox Grid.Row="1" x:Name="ToolsOutput" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="12" VerticalScrollBarVisibility="Auto"/></Grid></Border>
+    </Grid>
+   </TabItem>
+
+   <TabItem>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="28,24,28,28">
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <StackPanel Margin="2,0,0,20"><TextBlock Style="{StaticResource PageTitle}" Text="Premiere Helper"/><TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Export individual timeline clips from Premiere Pro with the included ExtendScript workflow."/></StackPanel>
+     <Border Grid.Row="1" Style="{StaticResource Card}">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="220"/></Grid.ColumnDefinitions>
+       <StackPanel Margin="4"><TextBlock Style="{StaticResource SectionTitle}" Text="Experimental timeline exporter"/><TextBlock Margin="0,10,20,16" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" LineHeight="20" Text="The included helper exports each clip on video track V1 as an individual file using sequence In/Out points. Visible timeline effects and adjustment layers are included. Test on a duplicate project first."/><Button HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}" Content="Open Premiere Helper Folder" Click="OpenPremiere_Click"/></StackPanel>
+       <Image Grid.Column="1" Source="Assets/Branding/jr-glow-source.png" Stretch="Uniform" Opacity="0.78"/>
+      </Grid>
+     </Border>
+     <Border Grid.Row="2" Background="#1D171B" BorderBrush="#55303C" BorderThickness="1" CornerRadius="9" Padding="14"><TextBlock Foreground="#E9BAC7" TextWrapping="Wrap" Text="Tip: duplicate the Premiere project before running timeline automation, and confirm the Adobe Media Encoder preset before a long export."/></Border>
+    </Grid></ScrollViewer>
+   </TabItem>
+
+   <TabItem>
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="28,24,28,28">
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <StackPanel Margin="2,0,0,20"><TextBlock Style="{StaticResource PageTitle}" Text="Settings"/><TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Choose the folders, tools, and defaults restored whenever the application starts."/></StackPanel>
+     <Border Grid.Row="1" Style="{StaticResource Card}"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Folders"/>
+      <StackPanel Grid.Row="1" Grid.ColumnSpan="2"><TextBlock Style="{StaticResource FieldLabel}" Text="DEFAULT VIDEO FOLDER"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseDefaultVideoFolder_Click"/><TextBox x:Name="SettingsDefaultVideoFolder"/></DockPanel></StackPanel>
+      <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,8,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="LUT LIBRARY FOLDER"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseSettingsLutFolder_Click"/><TextBox x:Name="SettingsLutFolder"/></DockPanel></StackPanel>
+     </Grid></Border>
+     <Border Grid.Row="2" Style="{StaticResource Card}"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Batch Encode Defaults"/>
+      <StackPanel Grid.Row="1" Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="SettingsResolution"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="SettingsRecoveryMode"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
+      <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="4,8,0,0"><CheckBox x:Name="SettingsRecursive" Content="Include subfolders by default"/><CheckBox x:Name="SettingsSkipExisting" Content="Skip completed output files by default"/></WrapPanel>
+     </Grid></Border>
+     <Border Grid.Row="3" Style="{StaticResource Card}"><StackPanel><TextBlock Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="External Tools"/><TextBlock Style="{StaticResource FieldLabel}" Text="FFMPEG EXECUTABLE"/><DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseSettingsFfmpeg_Click"/><TextBox x:Name="SettingsFfmpegPath"/></DockPanel><TextBlock Margin="6,5,4,0" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Text="Leave blank to use a bundled FFmpeg or the first copy available on PATH. FFprobe is detected beside FFmpeg or on PATH."/></StackPanel></Border>
+     <DockPanel Grid.Row="4" Margin="2,0"><TextBlock x:Name="SettingsMessage" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}"/><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Restore Defaults" Click="ResetSettings_Click"/><Button Style="{StaticResource PrimaryButton}" Content="Save Settings" Click="SaveSettings_Click"/></StackPanel></DockPanel>
+    </Grid></ScrollViewer>
+   </TabItem>
+
+   <TabItem>
+    <Grid Margin="28,24,28,28"><Border Style="{StaticResource Card}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="620" Padding="28">
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Image Source="Assets/Branding/jr-glow-source.png" Width="190" Height="190" Stretch="Uniform"/>
+      <StackPanel Grid.Column="1" Margin="24,10,0,0"><TextBlock Style="{StaticResource PageTitle}" Text="Jeremy Media Toolkit"/><TextBlock Margin="0,4,0,16" Foreground="{StaticResource OrangeBrush}" FontSize="12" FontWeight="SemiBold" Text="JEREMY RUNNING PHOTOGRAPHY"/><TextBlock Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" LineHeight="20" Text="A focused Windows toolkit for batch encoding, media inspection, recovery workflows, and Premiere Pro exports."/><Border Height="2" Margin="0,22,0,16" Background="{StaticResource BrandGradient}"/><TextBlock Foreground="{StaticResource MutedTextBrush}" Text="Version 0.2  •  Built for the creative workflow"/></StackPanel>
+     </Grid>
+    </Border></Grid>
+   </TabItem>
   </TabControl>
-  <StatusBar Grid.Row="2"><TextBlock x:Name="StatusText" Text="Checking FFmpeg…"/></StatusBar>
+
+  <Border Grid.Row="1" Grid.Column="1" Background="#111319" BorderBrush="#252832" BorderThickness="0,1,0,0" Padding="14,0">
+   <DockPanel><TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Text="JR PHOTO STUDIO"/><Ellipse Width="7" Height="7" Fill="{StaticResource SuccessBrush}" Margin="0,0,8,0"/><TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Text="Checking FFmpeg…"/></DockPanel>
+  </Border>
  </Grid>
 </Window>

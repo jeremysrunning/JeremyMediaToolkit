@@ -10,5 +10,12 @@
     <RootNamespace>JeremyMediaToolkit</RootNamespace>
     <Version>0.2.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Branding\JeremyMediaToolkit.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Assets\Branding\JeremyMediaToolkit.ico" />
+    <None Remove="Assets\Branding\jr-glow-source.png" />
+    <Resource Include="Assets\Branding\JeremyMediaToolkit.ico" />
+    <Resource Include="Assets\Branding\jr-glow-source.png" />
+  </ItemGroup>
 </Project>

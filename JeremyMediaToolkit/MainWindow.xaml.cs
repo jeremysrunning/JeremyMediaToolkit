@@ -242,7 +242,13 @@ public partial class MainWindow : Window
         FileProgress.Value = _batchProgress.FilePercent;
         EtaText.Text = _batchProgress.StatusText;
     }
-    private void ToggleEncoding(bool running) { StartButton.IsEnabled = !running; CancelButton.IsEnabled = running; }
+    private void ToggleEncoding(bool running)
+    {
+        StartButton.IsEnabled = !running;
+        CancelButton.IsEnabled = running;
+        BatchStateText.Text = running ? "ENCODING" : "READY";
+        BatchStateText.Foreground = (System.Windows.Media.Brush)FindResource(running ? "OrangeBrush" : "SuccessBrush");
+    }
     private void Cancel_Click(object sender, RoutedEventArgs e) => _cts?.Cancel();
     private void AppendLog(string text) { Dispatcher.Invoke(() => { LogBox.AppendText(text.TrimEnd() + Environment.NewLine); LogBox.ScrollToEnd(); }); }
 

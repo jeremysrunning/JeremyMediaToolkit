@@ -6,6 +6,7 @@ A native C#/.NET 8 WPF desktop utility for Jeremy Running Photography video work
 
 - Folder batch encoding with a dropdown of `.cube` LUTs from a configurable folder
 - Dedicated Settings tab for default folders, FFmpeg, and batch preferences
+- Branded dark-studio interface with card-based workflows and a multi-size Windows application icon
 - 1080p, 4K UHD, or source-resolution output
 - High-quality NVIDIA NVENC H.264 (`p7`, full-resolution multipass, adaptive quantization)
 - Normal, salvage, and video-only recovery modes
