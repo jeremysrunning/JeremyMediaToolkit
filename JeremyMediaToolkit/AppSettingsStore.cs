@@ -30,6 +30,10 @@ internal static class AppSettingsStore
         {
             return new AppSettings(LutCatalog.DefaultFolder);
         }
+        catch (UnauthorizedAccessException)
+        {
+            return new AppSettings(LutCatalog.DefaultFolder);
+        }
     }
 
     public static void Save(string path, AppSettings settings)

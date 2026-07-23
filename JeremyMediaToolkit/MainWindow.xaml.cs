@@ -34,17 +34,11 @@ public partial class MainWindow : Window
     private void LocateTools()
     {
         var baseDir = AppContext.BaseDirectory;
-        _ffmpeg = FindExecutable("ffmpeg.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffmpeg.exe"));
-        _ffprobe = FindExecutable("ffprobe.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffprobe.exe"));
+        _ffmpeg = ExecutableLocator.Find("ffmpeg.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffmpeg.exe"));
+        _ffprobe = ExecutableLocator.Find("ffprobe.exe", Path.Combine(baseDir, "ffmpeg", "bin", "ffprobe.exe"));
         StatusText.Text = _ffmpeg is null ? "FFmpeg not found — use FFmpeg Settings" : $"FFmpeg ready: {_ffmpeg}";
     }
 
-    private static string? FindExecutable(string name, string bundled)
-    {
-        if (File.Exists(bundled)) return bundled;
-        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
-        return path.Split(Path.PathSeparator).Select(p => Path.Combine(p.Trim('"'), name)).FirstOrDefault(File.Exists);
-    }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
@@ -101,18 +95,14 @@ public partial class MainWindow : Window
         LogBox.Clear();
         try
         {
-            var option = Recursive.IsChecked == true ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            var files = Directory.EnumerateFiles(InputFolder.Text, "*.*", option)
-                .Where(p => new[] { ".mp4", ".mov", ".mkv", ".mxf" }.Contains(Path.GetExtension(p).ToLowerInvariant()))
-                .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}Toolkit-", StringComparison.OrdinalIgnoreCase)).Order().ToList();
+            var files = MediaFileCatalog.Discover(InputFolder.Text, Recursive.IsChecked == true);
             if (files.Count == 0) throw new InvalidOperationException("No supported video files were found.");
             _batchProgress.StartBatch(files.Count);
             ApplyProgressState();
 
-            var mode = RecoveryMode.SelectedIndex;
-            var suffix = mode == 1 ? "-Salvage" : mode == 2 ? "-VideoOnly" : "";
-            var resName = Resolution.SelectedIndex == 0 ? "1080p" : Resolution.SelectedIndex == 1 ? "4K" : "Source";
-            var outputRoot = Path.Combine(InputFolder.Text, $"Toolkit-{resName}-LUT{suffix}");
+            var recovery = (RecoveryStrategy)RecoveryMode.SelectedIndex;
+            var resolution = (OutputResolution)Resolution.SelectedIndex;
+            var outputRoot = EncodingPathPlanner.OutputRoot(InputFolder.Text, resolution, recovery);
             Directory.CreateDirectory(outputRoot);
             var batchStart = Stopwatch.StartNew();
             var completed = 0;
@@ -120,10 +110,10 @@ public partial class MainWindow : Window
             foreach (var input in files)
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                var relativeDir = Path.GetDirectoryName(Path.GetRelativePath(InputFolder.Text, input)) ?? "";
-                var outDir = Path.Combine(outputRoot, relativeDir);
+                var job = EncodingPathPlanner.CreateJob(InputFolder.Text, outputRoot, input, resolution);
+                var outDir = Path.GetDirectoryName(job.OutputPath)!;
                 Directory.CreateDirectory(outDir);
-                var output = Path.Combine(outDir, Path.GetFileNameWithoutExtension(input) + $"_{resName}.mp4");
+                var output = job.OutputPath;
                 _batchProgress.StartFile();
                 FileProgress.Value = _batchProgress.FilePercent;
                 CurrentFileText.Text = $"{completed + 1}/{files.Count}: {Path.GetFileName(input)}";
@@ -132,7 +122,7 @@ public partial class MainWindow : Window
                     AppendLog($"Skipped existing: {output}"); completed++; UpdateBatch(completed, files.Count, batchStart); continue;
                 }
                 var duration = await ProbeDurationAsync(input, _cts.Token);
-                var args = BuildEncodeArguments(input, output, SelectedLutPath!, mode);
+                var args = FfmpegCommandBuilder.Encode(input, output, SelectedLutPath!, recovery, resolution);
                 var exit = await RunFfmpegProgressAsync(args, duration, p =>
                 {
                     _batchProgress.ReportFileProgress(p);
@@ -158,21 +148,6 @@ public partial class MainWindow : Window
 
     private string? SelectedLutPath => (LutSelection.SelectedItem as LutOption)?.FilePath;
 
-    private List<string> BuildEncodeArguments(string input, string output, string lut, int mode)
-    {
-        var a = new List<string> { "-hide_banner", "-y" };
-        if (mode > 0) a.AddRange(["-fflags", "+discardcorrupt+genpts", "-err_detect", "ignore_err"]);
-        a.AddRange(["-i", input, "-map", "0:v:0"]);
-        if (mode != 2) a.AddRange(["-map", mode == 1 ? "0:a:0?" : "0:a?"]);
-        var lutEscaped = lut.Replace("\\", "/").Replace(":", "\\:").Replace("'", "\\'");
-        var scale = Resolution.SelectedIndex == 0 ? ",scale=-2:1080" : Resolution.SelectedIndex == 1 ? ",scale=3840:2160:force_original_aspect_ratio=decrease,pad=3840:2160:(ow-iw)/2:(oh-ih)/2" : "";
-        a.AddRange(["-vf", $"lut3d=file='{lutEscaped}'{scale}", "-c:v", "h264_nvenc", "-preset", "p7", "-tune", "hq", "-rc", "vbr", "-cq", "18", "-b:v", "0", "-multipass", "fullres", "-spatial-aq", "1", "-temporal-aq", "1", "-aq-strength", "8", "-pix_fmt", "yuv420p"]);
-        if (mode == 0) a.AddRange(["-c:a", "copy"]);
-        else if (mode == 1) a.AddRange(["-c:a", "aac", "-b:a", "192k", "-af", "aresample=async=1:first_pts=0"]);
-        else a.Add("-an");
-        a.AddRange(["-movflags", "+faststart", "-progress", "pipe:1", "-nostats", output]);
-        return a;
-    }
 
     private async Task<int> RunFfmpegProgressAsync(List<string> args, double duration, Action<double> progress, CancellationToken token)
     {
@@ -181,8 +156,7 @@ public partial class MainWindow : Window
         var errTask = Task.Run(async () => { while (await process.StandardError.ReadLineAsync(token) is { } line) { errors.AppendLine(line); } }, token);
         while (await process.StandardOutput.ReadLineAsync(token) is { } line)
         {
-            if (line.StartsWith("out_time_us=") && long.TryParse(line[12..], out var us) && duration > 0)
-                progress(Math.Clamp(us / 1_000_000d / duration * 100, 0, 100));
+            if (FfmpegProgressParser.TryParsePercent(line, duration, out var percent)) progress(percent);
         }
         await process.WaitForExitAsync(token); await errTask;
         if (process.ExitCode != 0) AppendLog(errors.ToString());
@@ -209,44 +183,43 @@ public partial class MainWindow : Window
     private async Task<double> ProbeDurationAsync(string file, CancellationToken token)
     {
         if (_ffprobe is null) return 0;
-        var result = await CaptureAsync(_ffprobe, ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", file], token);
+        var result = await CaptureAsync(_ffprobe, FfmpegCommandBuilder.ProbeDuration(file), token);
         return double.TryParse(result.StdOut.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 0;
     }
 
     private async void Inspect_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
-        EnsureProbe(); var r = await CaptureAsync(_ffprobe!, ["-hide_banner", "-show_format", "-show_streams", MediaPath.Text], CancellationToken.None); ToolsOutput.Text = r.StdOut + r.StdErr;
+        EnsureProbe(); var r = await CaptureAsync(_ffprobe!, FfmpegCommandBuilder.Inspect(MediaPath.Text), CancellationToken.None); ToolsOutput.Text = r.StdOut + r.StdErr;
     });
 
     private async void Verify_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); ToolsOutput.Text = "Verifying every decodable frame…";
-        var r = await CaptureAsync(_ffmpeg!, ["-v", "warning", "-i", MediaPath.Text, "-map", "0:v:0", "-f", "null", "NUL"], CancellationToken.None);
+        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Verify(MediaPath.Text), CancellationToken.None);
         var report = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_verification.csv");
         var status = r.ExitCode == 0 ? "completed" : "failed";
-        File.WriteAllText(report, "file,status,exit_code,notes\r\n" + Csv(MediaPath.Text) + $",{status},{r.ExitCode}," + Csv(r.StdErr));
+        File.WriteAllText(report, "file,status,exit_code,notes\r\n" + CsvFormatter.Escape(MediaPath.Text) + $",{status},{r.ExitCode}," + CsvFormatter.Escape(r.StdErr));
         ToolsOutput.Text = $"Verification {status}. Report: {report}\r\n\r\n{r.StdErr}";
     });
 
     private async void Rewrap_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_rewrapped.mp4");
-        var r = await CaptureAsync(_ffmpeg!, ["-hide_banner", "-y", "-i", MediaPath.Text, "-map", "0", "-c", "copy", "-movflags", "+faststart", output], CancellationToken.None);
+        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Rewrap(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
     private async void Proxy_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_proxy.mp4");
-        var r = await CaptureAsync(_ffmpeg!, ["-hide_banner", "-y", "-i", MediaPath.Text, "-vf", "scale=-2:1080", "-c:v", "h264_nvenc", "-preset", "p4", "-cq", "24", "-b:v", "0", "-c:a", "aac", "-b:a", "128k", output], CancellationToken.None);
+        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Proxy(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
     private async void ContactSheet_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_contact-sheet.jpg");
-        var filter = "fps=1/10,scale=480:-1,tile=4x4:padding=8:margin=8";
-        var r = await CaptureAsync(_ffmpeg!, ["-hide_banner", "-y", "-i", MediaPath.Text, "-vf", filter, "-frames:v", "1", output], CancellationToken.None);
+        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.ContactSheet(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
@@ -254,7 +227,6 @@ public partial class MainWindow : Window
     private void EnsureMedia() { if (!File.Exists(MediaPath.Text)) throw new InvalidOperationException("Select a valid media file."); }
     private void EnsureFfmpeg() { if (_ffmpeg is null) throw new InvalidOperationException("FFmpeg was not found."); }
     private void EnsureProbe() { EnsureMedia(); if (_ffprobe is null) throw new InvalidOperationException("ffprobe.exe was not found beside FFmpeg or in PATH."); }
-    private static string Csv(string value) => "\"" + value.Replace("\"", "\"\"").Replace("\r", " ").Replace("\n", " | ") + "\"";
 
     private void OpenPremiere_Click(object sender, RoutedEventArgs e)
     {
