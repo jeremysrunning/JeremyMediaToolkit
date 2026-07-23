@@ -9,7 +9,7 @@ internal static class MediaFileCatalog
         ".mp4", ".mov", ".mkv", ".mxf"
     };
 
-    public static IReadOnlyList<string> Discover(string folder, bool recursive, string? excludedFolder = null)
+    public static IReadOnlyList<string> Discover(string folder, bool recursive, string? excludedFolder = null, string? excludedFilenameSuffix = null)
     {
         if (!Directory.Exists(folder)) return [];
         var option = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
@@ -18,6 +18,7 @@ internal static class MediaFileCatalog
             .Where(path => string.IsNullOrWhiteSpace(excludedFolder) || !IsWithin(excludedFolder, path))
             .Where(path => !IsGeneratedOutput(folder, path))
             .Where(path => !IsResolutionSuffixedOutput(path))
+            .Where(path => string.IsNullOrWhiteSpace(excludedFilenameSuffix) || !Path.GetFileNameWithoutExtension(path).EndsWith(excludedFilenameSuffix, StringComparison.OrdinalIgnoreCase))
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }

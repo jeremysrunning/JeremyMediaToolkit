@@ -28,7 +28,9 @@ public sealed class AppStateStoreTests : IDisposable
             LastOutputMode = OutputDestinationMode.SpecificFolder,
             LastOutputSubfolder = "Deliverables",
             LastOutputSubfolderUsesResolutionDefault = false,
-            LastSpecificOutputFolder = @"E:\Exports"
+            LastSpecificOutputFolder = @"E:\Exports",
+            LastFilenameSuffix = "_Web",
+            LastFilenameSuffixUsesResolutionDefault = false
         };
 
         AppStateStore.Save(StatePath, expected);

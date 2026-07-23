@@ -57,6 +57,17 @@ public sealed class EncodingPathPlannerTests
         Assert.EndsWith(extension, job.OutputPath);
     }
     [Fact]
+    public void CreateJob_UsesCustomOrEmptyFilenameSuffix()
+    {
+        var custom = EncodingPathPlanner.CreateJob("input", "output", Path.Combine("input", "clip.mov"),
+            OutputResolution.FullHd, filenameSuffix: "_Social");
+        var noSuffix = EncodingPathPlanner.CreateJob("input", "output", Path.Combine("input", "clip.mov"),
+            OutputResolution.FullHd, filenameSuffix: "");
+
+        Assert.EndsWith("clip_Social.mp4", custom.OutputPath);
+        Assert.EndsWith("clip.mp4", noSuffix.OutputPath);
+    }
+    [Fact]
     public void ResolutionName_RejectsUnknownValue()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => EncodingPathPlanner.ResolutionName((OutputResolution)99));

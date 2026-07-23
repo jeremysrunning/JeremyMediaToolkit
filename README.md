@@ -133,7 +133,7 @@ See `PremiereHelper\README.txt`. Adobe has changed Premiere scripting support ov
 
 ## Notes
 
-- Originals are never overwritten. Encoded files go into a new `Lightflow-*` subfolder. HEVC and non-MP4 jobs receive distinct folder suffixes so skip-existing behavior cannot confuse different output formats.
+- Batch output can remain beside each source with a customizable filename suffix, go into a named subfolder, or use a specific destination. Source-relative folders are preserved.
 - The LUT dropdown defaults to `J:\Photography\LUTs`. Choose another LUT folder in Settings, or use **Refresh** after adding LUT files to the current folder.
 - Application defaults are saved in `settings.json`, while the most recently used batch choices are remembered separately in `state.json` under `%LOCALAPPDATA%\Jeremy Running Photography\Lightflow Studio`.
 - 4K output is 3840×2160 with aspect-preserving scale and letterbox/pillarbox padding when required.

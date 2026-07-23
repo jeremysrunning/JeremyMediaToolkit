@@ -20,9 +20,6 @@ public sealed class SettingsPreferencesTests : IDisposable
             DefaultRecovery = RecoveryStrategy.Salvage,
             IncludeSubfolders = true,
             SkipExisting = false,
-            DefaultOutputMode = OutputDestinationMode.SpecificFolder,
-            DefaultOutputSubfolder = "Deliverables",
-            DefaultSpecificOutputFolder = @"E:\Exports",
             EncodingPreset = EncodingPreset.EfficientHevc,
             Encoding = EncodingPresetCatalog.Get(EncodingPreset.EfficientHevc) with
             {
@@ -53,8 +50,6 @@ public sealed class SettingsPreferencesTests : IDisposable
         Assert.Equal(RecoveryStrategy.Normal, settings.DefaultRecovery);
         Assert.False(settings.IncludeSubfolders);
         Assert.True(settings.SkipExisting);
-        Assert.Equal(OutputDestinationMode.Subfolder, settings.DefaultOutputMode);
-        Assert.Equal("", settings.DefaultOutputSubfolder);
     }
 
     [Fact]

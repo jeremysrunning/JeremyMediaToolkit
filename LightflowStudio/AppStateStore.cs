@@ -16,6 +16,8 @@ internal sealed record AppState
     public string LastOutputSubfolder { get; init; } = "";
     public bool LastOutputSubfolderUsesResolutionDefault { get; init; } = true;
     public string LastSpecificOutputFolder { get; init; } = "";
+    public string LastFilenameSuffix { get; init; } = "";
+    public bool LastFilenameSuffixUsesResolutionDefault { get; init; } = true;
 
     public AppState() { }
     public AppState(string lastLutPath) => LastLutPath = lastLutPath;

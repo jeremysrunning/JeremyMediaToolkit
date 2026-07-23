@@ -13,7 +13,7 @@ public sealed class OutputDestinationPlannerTests : IDisposable
     public void SameFolder_UsesInputRoot()
     {
         var root = OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.FullHd,
-            new OutputDestinationOptions(OutputDestinationMode.SameFolder, "", ""));
+            new OutputDestinationOptions(OutputDestinationMode.SameFolder, "", "", ""));
         Assert.Equal(_input, root);
     }
 
@@ -21,7 +21,7 @@ public sealed class OutputDestinationPlannerTests : IDisposable
     public void BlankSubfolder_DefaultsToResolutionName()
     {
         var root = OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.UltraHd,
-            new OutputDestinationOptions(OutputDestinationMode.Subfolder, "", ""));
+            new OutputDestinationOptions(OutputDestinationMode.Subfolder, "", "", ""));
         Assert.Equal(Path.Combine(_input, "4K"), root);
     }
 
@@ -29,10 +29,10 @@ public sealed class OutputDestinationPlannerTests : IDisposable
     public void NamedSubfolder_IsTrimmedAndValidated()
     {
         var root = OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.FullHd,
-            new OutputDestinationOptions(OutputDestinationMode.Subfolder, "  Deliverables  ", ""));
+            new OutputDestinationOptions(OutputDestinationMode.Subfolder, "  Deliverables  ", "", ""));
         Assert.Equal(Path.Combine(_input, "Deliverables"), root);
         Assert.Throws<ArgumentException>(() => OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.FullHd,
-            new OutputDestinationOptions(OutputDestinationMode.Subfolder, @"nested\folder", "")));
+            new OutputDestinationOptions(OutputDestinationMode.Subfolder, @"nested\folder", "", "")));
     }
 
     [Fact]
@@ -40,15 +40,27 @@ public sealed class OutputDestinationPlannerTests : IDisposable
     {
         var chosen = Path.Combine(_input, "..", "Exports");
         var root = OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.Source,
-            new OutputDestinationOptions(OutputDestinationMode.SpecificFolder, "", chosen));
+            new OutputDestinationOptions(OutputDestinationMode.SpecificFolder, "", chosen, ""));
         Assert.Equal(Path.GetFullPath(chosen), root);
     }
 
     [Fact]
+    public void SameFolderSuffix_DefaultsToResolutionAndCanBeCustomized()
+    {
+        Assert.Equal("_1080p", OutputDestinationPlanner.ResolveFilenameSuffix(OutputResolution.FullHd,
+            new OutputDestinationOptions(OutputDestinationMode.SameFolder, "", "", "")));
+        Assert.Equal("_Social", OutputDestinationPlanner.ResolveFilenameSuffix(OutputResolution.UltraHd,
+            new OutputDestinationOptions(OutputDestinationMode.SameFolder, "", "", "_Social")));
+        Assert.Equal("", OutputDestinationPlanner.ResolveFilenameSuffix(OutputResolution.UltraHd,
+            new OutputDestinationOptions(OutputDestinationMode.Subfolder, "", "", "_Ignored")));
+    }
+    [Fact]
     public void SpecificFolder_RequiresAPath()
     {
         Assert.Throws<ArgumentException>(() => OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.Source,
-            new OutputDestinationOptions(OutputDestinationMode.SpecificFolder, "", "  ")));
+            new OutputDestinationOptions(OutputDestinationMode.SpecificFolder, "", "  ", "")));
+        Assert.Throws<ArgumentException>(() => OutputDestinationPlanner.ResolveRoot(_input, OutputResolution.Source,
+            new OutputDestinationOptions(OutputDestinationMode.SpecificFolder, "", _input, "")));
     }
 
     public void Dispose() => Directory.Delete(_input, recursive: true);

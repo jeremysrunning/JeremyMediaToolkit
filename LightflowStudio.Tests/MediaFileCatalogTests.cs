@@ -57,9 +57,10 @@ public sealed class MediaFileCatalogTests : IDisposable
         Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(_root, "source.mp4"), "video");
         File.WriteAllText(Path.Combine(_root, "source_1080p.mp4"), "output");
+        File.WriteAllText(Path.Combine(_root, "source_Social.mp4"), "custom output");
         File.WriteAllText(Path.Combine(output, "source_4K.mp4"), "output");
 
-        var file = Assert.Single(MediaFileCatalog.Discover(_root, recursive: true, excludedFolder: output));
+        var file = Assert.Single(MediaFileCatalog.Discover(_root, recursive: true, excludedFolder: output, excludedFilenameSuffix: "_Social"));
 
         Assert.Equal("source.mp4", Path.GetFileName(file));
     }

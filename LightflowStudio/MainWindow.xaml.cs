@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     private bool _forceClose;
     private bool _subfolderUsesResolutionDefault = true;
     private bool _updatingSubfolderName;
+    private bool _filenameSuffixUsesResolutionDefault = true;
+    private bool _updatingFilenameSuffix;
     private static readonly double[] FrameRateValues = [0, 23.976, 24, 25, 29.97, 30, 50, 59.94, 60];
     private static readonly int[] AudioSampleRates = [0, 44100, 48000, 96000];
 
@@ -86,10 +88,6 @@ public partial class MainWindow : Window
         if (PickFolder("Select the output folder", OutputSpecificFolder.Text) is { } folder) OutputSpecificFolder.Text = folder;
     }
 
-    private void BrowseDefaultOutputFolder_Click(object sender, RoutedEventArgs e)
-    {
-        if (PickFolder("Select the default output folder", SettingsSpecificOutputFolder.Text) is { } folder) SettingsSpecificOutputFolder.Text = folder;
-    }
 
     private void OutputMode_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
@@ -101,14 +99,17 @@ public partial class MainWindow : Window
     private void UpdateOutputModeUi()
     {
         var mode = (OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2);
-        OutputSameFolderNote.Visibility = mode == OutputDestinationMode.SameFolder ? Visibility.Visible : Visibility.Collapsed;
+        OutputSameFolderPanel.Visibility = mode == OutputDestinationMode.SameFolder ? Visibility.Visible : Visibility.Collapsed;
         OutputSubfolderPanel.Visibility = mode == OutputDestinationMode.Subfolder ? Visibility.Visible : Visibility.Collapsed;
         OutputSpecificPanel.Visibility = mode == OutputDestinationMode.SpecificFolder ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Resolution_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (IsLoaded && _subfolderUsesResolutionDefault) { SetResolutionSubfolderName(); RefreshBatchFiles(); }
+        if (!IsLoaded) return;
+        if (_subfolderUsesResolutionDefault) SetResolutionSubfolderName();
+        if (_filenameSuffixUsesResolutionDefault) SetResolutionFilenameSuffix();
+        RefreshBatchFiles();
     }
 
     private void OutputSubfolderName_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -116,6 +117,18 @@ public partial class MainWindow : Window
         if (IsLoaded && !_updatingSubfolderName) _subfolderUsesResolutionDefault = false;
     }
 
+    private void OutputFilenameSuffix_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (IsLoaded && !_updatingFilenameSuffix) _filenameSuffixUsesResolutionDefault = false;
+    }
+
+    private void SetResolutionFilenameSuffix()
+    {
+        _updatingFilenameSuffix = true;
+        OutputFilenameSuffix.Text = $"_{EncodingPathPlanner.ResolutionName((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2))}";
+        _updatingFilenameSuffix = false;
+        _filenameSuffixUsesResolutionDefault = true;
+    }
     private void SetResolutionSubfolderName()
     {
         _updatingSubfolderName = true;
@@ -155,7 +168,14 @@ public partial class MainWindow : Window
             }
         }
         catch (ArgumentException) { }
-        foreach (var option in BatchFileSelection.Discover(InputFolder.Text, Recursive.IsChecked == true, excludedOutput))
+        string? excludedSuffix = null;
+        try
+        {
+            if ((OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2) == OutputDestinationMode.SameFolder)
+                excludedSuffix = OutputDestinationPlanner.ResolveFilenameSuffix((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2), CurrentOutputDestination());
+        }
+        catch (ArgumentException) { }
+        foreach (var option in BatchFileSelection.Discover(InputFolder.Text, Recursive.IsChecked == true, excludedOutput, excludedSuffix))
             _batchFiles.Add(option);
         UpdateBatchFileSummary();
         _ = LoadBatchMetadataAsync(_batchFiles.ToList(), _batchMetadataCts.Token);
@@ -304,9 +324,6 @@ public partial class MainWindow : Window
             DefaultRecovery = (RecoveryStrategy)SettingsRecoveryMode.SelectedIndex,
             IncludeSubfolders = SettingsRecursive.IsChecked == true,
             SkipExisting = SettingsSkipExisting.IsChecked == true,
-            DefaultOutputMode = (OutputDestinationMode)Math.Clamp(SettingsOutputMode.SelectedIndex, 0, 2),
-            DefaultOutputSubfolder = SettingsOutputSubfolder.Text,
-            DefaultSpecificOutputFolder = SettingsSpecificOutputFolder.Text,
             EncodingPreset = selectedPreset,
             Encoding = encoding
         });
@@ -385,9 +402,6 @@ public partial class MainWindow : Window
         SettingsRecoveryMode.SelectedIndex = (int)settings.DefaultRecovery;
         SettingsRecursive.IsChecked = settings.IncludeSubfolders;
         SettingsSkipExisting.IsChecked = settings.SkipExisting;
-        SettingsOutputMode.SelectedIndex = (int)settings.DefaultOutputMode;
-        SettingsOutputSubfolder.Text = settings.DefaultOutputSubfolder;
-        SettingsSpecificOutputFolder.Text = settings.DefaultSpecificOutputFolder;
         SettingsEncodingPreset.SelectedIndex = (int)settings.EncodingPreset;
         PopulateEncodingControls(settings.Encoding);
     }
@@ -424,14 +438,10 @@ public partial class MainWindow : Window
         RecoveryMode.SelectedIndex = (int)settings.DefaultRecovery;
         Recursive.IsChecked = settings.IncludeSubfolders;
         SkipExisting.IsChecked = settings.SkipExisting;
-        OutputMode.SelectedIndex = (int)settings.DefaultOutputMode;
-        OutputSpecificFolder.Text = settings.DefaultSpecificOutputFolder;
-        if (string.IsNullOrWhiteSpace(settings.DefaultOutputSubfolder)) SetResolutionSubfolderName();
-        else
-        {
-            _subfolderUsesResolutionDefault = false;
-            OutputSubfolderName.Text = settings.DefaultOutputSubfolder;
-        }
+        OutputMode.SelectedIndex = (int)OutputDestinationMode.Subfolder;
+        OutputSpecificFolder.Text = "";
+        SetResolutionSubfolderName();
+        SetResolutionFilenameSuffix();
         UpdateOutputModeUi();
         if (IsLoaded) RefreshBatchFiles();
     }
@@ -447,8 +457,11 @@ public partial class MainWindow : Window
         OutputMode.SelectedIndex = (int)state.LastOutputMode;
         OutputSpecificFolder.Text = state.LastSpecificOutputFolder;
         _subfolderUsesResolutionDefault = state.LastOutputSubfolderUsesResolutionDefault;
+        _filenameSuffixUsesResolutionDefault = state.LastFilenameSuffixUsesResolutionDefault;
         if (_subfolderUsesResolutionDefault) SetResolutionSubfolderName();
         else OutputSubfolderName.Text = state.LastOutputSubfolder;
+        if (_filenameSuffixUsesResolutionDefault) SetResolutionFilenameSuffix();
+        else OutputFilenameSuffix.Text = state.LastFilenameSuffix;
         UpdateOutputModeUi();
     }
 
@@ -465,6 +478,8 @@ public partial class MainWindow : Window
             LastOutputMode = (OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2),
             LastOutputSubfolder = OutputSubfolderName.Text,
             LastOutputSubfolderUsesResolutionDefault = _subfolderUsesResolutionDefault,
+            LastFilenameSuffix = OutputFilenameSuffix.Text,
+            LastFilenameSuffixUsesResolutionDefault = _filenameSuffixUsesResolutionDefault,
             LastSpecificOutputFolder = OutputSpecificFolder.Text
         };
         try { AppStateStore.Save(AppStateStore.StatePath, _state); }
@@ -474,7 +489,8 @@ public partial class MainWindow : Window
     private OutputDestinationOptions CurrentOutputDestination() => new(
         (OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2),
         _subfolderUsesResolutionDefault ? "" : OutputSubfolderName.Text,
-        OutputSpecificFolder.Text);
+        OutputSpecificFolder.Text,
+        _filenameSuffixUsesResolutionDefault ? "" : OutputFilenameSuffix.Text);
     private void BrowseMedia_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog { Filter = "Video files|*.mp4;*.mov;*.mxf;*.mkv;*.avi|All files|*.*" };
@@ -534,7 +550,8 @@ public partial class MainWindow : Window
             foreach (var input in files)
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                var job = EncodingPathPlanner.CreateJob(InputFolder.Text, outputRoot, input, resolution, _settings.Encoding.Container);
+                var suffix = OutputDestinationPlanner.ResolveFilenameSuffix(resolution, CurrentOutputDestination());
+                var job = EncodingPathPlanner.CreateJob(InputFolder.Text, outputRoot, input, resolution, _settings.Encoding.Container, suffix);
                 var outDir = Path.GetDirectoryName(job.OutputPath)!;
                 Directory.CreateDirectory(outDir);
                 var output = job.OutputPath;
@@ -623,7 +640,13 @@ public partial class MainWindow : Window
     {
         if (_ffmpeg is null || !File.Exists(_ffmpeg)) { MessageBox.Show("FFmpeg was not found. Open Settings to configure ffmpeg.exe."); return false; }
         if (!Directory.Exists(InputFolder.Text)) { MessageBox.Show("Select a valid video folder."); return false; }
-        try { _ = OutputDestinationPlanner.ResolveRoot(InputFolder.Text, (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2), CurrentOutputDestination()); }
+        try
+        {
+            var outputOptions = CurrentOutputDestination();
+            var outputResolution = (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2);
+            _ = OutputDestinationPlanner.ResolveRoot(InputFolder.Text, outputResolution, outputOptions);
+            _ = OutputDestinationPlanner.ResolveFilenameSuffix(outputResolution, outputOptions);
+        }
         catch (ArgumentException ex) { MessageBox.Show(ex.Message, "Output location", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
         if (SelectedLutPath is not { } lut || !File.Exists(lut) || !lut.EndsWith(".cube", StringComparison.OrdinalIgnoreCase)) { MessageBox.Show("Select a valid .cube LUT from the LUT dropdown."); return false; }
         return true;

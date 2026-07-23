@@ -12,9 +12,6 @@ internal sealed record AppSettings
     public RecoveryStrategy DefaultRecovery { get; init; } = RecoveryStrategy.Normal;
     public bool IncludeSubfolders { get; init; }
     public bool SkipExisting { get; init; } = true;
-    public OutputDestinationMode DefaultOutputMode { get; init; } = OutputDestinationMode.Subfolder;
-    public string DefaultOutputSubfolder { get; init; } = "";
-    public string DefaultSpecificOutputFolder { get; init; } = "";
     public EncodingPreset EncodingPreset { get; init; } = EncodingPreset.Recommended;
     public EncodingOptions Encoding { get; init; } = EncodingPresetCatalog.Recommended;
 
@@ -31,9 +28,6 @@ internal sealed record AppSettings
             FfmpegPath = settings.FfmpegPath?.Trim() ?? "",
             DefaultResolution = Enum.IsDefined(settings.DefaultResolution) ? settings.DefaultResolution : OutputResolution.FullHd,
             DefaultRecovery = Enum.IsDefined(settings.DefaultRecovery) ? settings.DefaultRecovery : RecoveryStrategy.Normal,
-            DefaultOutputMode = Enum.IsDefined(settings.DefaultOutputMode) ? settings.DefaultOutputMode : OutputDestinationMode.Subfolder,
-            DefaultOutputSubfolder = settings.DefaultOutputSubfolder?.Trim() ?? "",
-            DefaultSpecificOutputFolder = settings.DefaultSpecificOutputFolder?.Trim() ?? "",
             EncodingPreset = Enum.IsDefined(settings.EncodingPreset) ? settings.EncodingPreset : EncodingPreset.Recommended,
             Encoding = EncodingOptions.Normalize(settings.Encoding)
         };
