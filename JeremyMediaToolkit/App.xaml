@@ -139,7 +139,8 @@
             <ContentPresenter Margin="10,3,34,3" VerticalAlignment="Center" HorizontalAlignment="Left"
              Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
              ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-             ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
+             ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+             TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
             <Border HorizontalAlignment="Right" Width="32" Background="#181B22" CornerRadius="0,6,6,0">
              <Path Width="9" Height="5" Stretch="Fill" Fill="{StaticResource MutedTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4.5 5 L 9 0 Z"/>
             </Border>
