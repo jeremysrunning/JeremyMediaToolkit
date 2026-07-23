@@ -1,18 +1,18 @@
 <Window x:Class="JeremyMediaToolkit.EncodingCloseDialog"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="Encoding in progress" Width="580" MinHeight="340" SizeToContent="Height" ResizeMode="NoResize"
+ Title="Video processing in progress" Width="580" MinHeight="340" SizeToContent="Height" ResizeMode="NoResize"
  WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
  Background="{StaticResource WindowBrush}" Foreground="{StaticResource TextBrush}">
  <Border Margin="18" Style="{StaticResource Card}" Padding="22">
   <Grid>
    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-   <TextBlock Style="{StaticResource PageTitle}" FontSize="23" Text="Encoding is still in progress"/>
+   <TextBlock Style="{StaticResource PageTitle}" FontSize="23" Text="A video is still being processed"/>
    <TextBlock Grid.Row="1" Margin="0,10,0,12" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"
-    Text="Encoding is temporarily paused. Choose whether to finish the current file before closing, stop immediately, or keep the application running."/>
+    Text="Processing is temporarily paused. Choose whether to finish the current file before closing, stop immediately, or keep the application running."/>
    <Border Grid.Row="2" Background="#2B171D" BorderBrush="#67303E" BorderThickness="1" CornerRadius="8" Padding="12">
     <TextBlock Foreground="#F3C3CE" TextWrapping="Wrap" LineHeight="19"
-     Text="Closing immediately terminates FFmpeg and may leave the current output file incomplete or corrupted."/>
+     Text="Closing immediately may leave the current output file incomplete or corrupted."/>
    </Border>
    <StackPanel Grid.Row="3" Margin="0,18,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
     <Button Content="Keep Running" Click="KeepRunning_Click"/>
