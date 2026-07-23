@@ -396,9 +396,9 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            LogBox.Text = ActivityLog.Prepend(LogBox.Text, text);
-            LogBox.CaretIndex = 0;
-            LogBox.ScrollToHome();
+            LogBox.Text = ActivityLog.Append(LogBox.Text, text);
+            LogBox.CaretIndex = LogBox.Text.Length;
+            LogBox.ScrollToEnd();
         });
     }
 

@@ -6,22 +6,22 @@ namespace JeremyMediaToolkit.Tests;
 public sealed class ActivityLogTests
 {
     [Fact]
-    public void Prepend_PutsNewestEntryFirst()
+    public void Append_PutsNewestEntryLast()
     {
-        var text = ActivityLog.Prepend("Older entry", "Newest entry");
+        var text = ActivityLog.Append("Older entry", "Newest entry");
 
-        Assert.Equal($"Newest entry{Environment.NewLine}Older entry", text);
+        Assert.Equal($"Older entry{Environment.NewLine}Newest entry", text);
     }
 
     [Fact]
-    public void Prepend_TrimsTrailingLineBreaks()
+    public void Append_TrimsTrailingLineBreaks()
     {
-        Assert.Equal("Entry", ActivityLog.Prepend("", "Entry\r\n"));
+        Assert.Equal("Entry", ActivityLog.Append("", "Entry\r\n"));
     }
 
     [Fact]
-    public void Prepend_IgnoresBlankEntries()
+    public void Append_IgnoresBlankEntries()
     {
-        Assert.Equal("Existing", ActivityLog.Prepend("Existing", "\r\n"));
+        Assert.Equal("Existing", ActivityLog.Append("Existing", "\r\n"));
     }
 }
