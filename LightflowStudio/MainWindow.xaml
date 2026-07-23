@@ -69,12 +69,20 @@
             </StackPanel>
             <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="Uncheck any videos you want to skip."/>
            </DockPanel>
-           <ListBox Grid.Row="1" x:Name="BatchFileList" MaxHeight="180" BorderThickness="0" Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
+           <ListBox Grid.Row="1" x:Name="BatchFileList" MaxHeight="230" BorderThickness="0" Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
             <ListBox.ItemTemplate>
              <DataTemplate>
-              <CheckBox Margin="2,3" IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="BatchFileSelection_Click">
-               <TextBlock Foreground="{StaticResource TextBrush}" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
-              </CheckBox>
+              <Grid Margin="2,4" ToolTip="{Binding DetailsTooltip}">
+               <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+               <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+               <CheckBox Grid.RowSpan="2" Margin="0,0,8,0" VerticalAlignment="Center" IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="BatchFileSelection_Click"/>
+               <TextBlock Grid.Column="1" Foreground="{StaticResource TextBrush}" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+               <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,2,8,0" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Text="{Binding DetailsText}" TextTrimming="CharacterEllipsis"/>
+               <Border Grid.Column="2" Grid.RowSpan="2" VerticalAlignment="Center" Background="#3B3218" BorderBrush="#8A7122" BorderThickness="1" CornerRadius="8" Padding="7,2" ToolTip="{Binding WarningTooltip}">
+                <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding HasWarning}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                <TextBlock Foreground="#F2D46B" FontSize="10" FontWeight="SemiBold" Text="{Binding WarningLabel}"/>
+               </Border>
+              </Grid>
              </DataTemplate>
             </ListBox.ItemTemplate>
            </ListBox>

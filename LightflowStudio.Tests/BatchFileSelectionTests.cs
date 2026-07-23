@@ -41,12 +41,12 @@ public sealed class BatchFileSelectionTests : IDisposable
     {
         var options = new[]
         {
-            new BatchFileOption("one.mp4", "one.mp4"),
+            new BatchFileOption("one.mp4", "one.mp4", 1024),
             new BatchFileOption("two.mp4", "two.mp4") { IsSelected = false },
-            new BatchFileOption("three.mp4", "three.mp4")
+            new BatchFileOption("three.mp4", "three.mp4", 1024)
         };
 
-        Assert.Equal("2 of 3 selected", BatchFileSelection.Summary(options));
+        Assert.Equal("2 of 3 selected · 2 KB · reading details…", BatchFileSelection.Summary(options));
         Assert.Equal("No supported video files found", BatchFileSelection.Summary([]));
     }
 

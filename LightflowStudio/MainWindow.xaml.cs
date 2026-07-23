@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private readonly EncodingPauseController _encodingPause = new();
     private readonly ObservableCollection<BatchFileOption> _batchFiles = [];
     private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private CancellationTokenSource? _batchMetadataCts;
     private Stopwatch? _batchStopwatch;
     private bool _closeAfterCurrent;
     private bool _forceClose;
@@ -50,8 +51,8 @@ public partial class MainWindow : Window
             ApplySettingsToBatch(_settings);
             if (_commandLineFolder is not null) InputFolder.Text = _commandLineFolder;
             BatchFileList.ItemsSource = _batchFiles;
-            RefreshBatchFiles();
             LocateTools();
+            RefreshBatchFiles();
             RefreshLuts();
         };
     }
@@ -95,10 +96,50 @@ public partial class MainWindow : Window
     private void RefreshBatchFiles()
     {
         _batchFolderRefreshTimer.Stop();
+        _batchMetadataCts?.Cancel();
+        _batchMetadataCts?.Dispose();
+        _batchMetadataCts = new CancellationTokenSource();
         _batchFiles.Clear();
         foreach (var option in BatchFileSelection.Discover(InputFolder.Text, Recursive.IsChecked == true))
             _batchFiles.Add(option);
         UpdateBatchFileSummary();
+        _ = LoadBatchMetadataAsync(_batchFiles.ToList(), _batchMetadataCts.Token);
+    }
+
+    private async Task LoadBatchMetadataAsync(IReadOnlyList<BatchFileOption> options, CancellationToken token)
+    {
+        if (_ffprobe is null)
+        {
+            foreach (var option in options) option.MarkMetadataUnavailable();
+            MediaWarningAnalyzer.Apply(options);
+            UpdateBatchFileSummary();
+            return;
+        }
+
+        try
+        {
+            foreach (var option in options)
+            {
+                token.ThrowIfCancellationRequested();
+                var result = await CaptureAsync(_ffprobe, FfmpegCommandBuilder.ProbeMetadata(option.FilePath), token);
+                if (result.ExitCode == 0 && MediaMetadataParser.TryParse(result.StdOut, option.FileSizeBytes, out var metadata))
+                    option.ApplyMetadata(metadata);
+                else
+                    option.MarkMetadataUnavailable();
+                MediaWarningAnalyzer.Apply(options);
+                UpdateBatchFileSummary();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer folder selection replaced this analysis.
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            foreach (var option in options.Where(item => item.IsAnalyzing)) option.MarkMetadataUnavailable();
+            MediaWarningAnalyzer.Apply(options);
+            UpdateBatchFileSummary();
+        }
     }
 
     private void SetBatchFileSelection(bool selected)
@@ -178,6 +219,7 @@ public partial class MainWindow : Window
             _settings = settings;
             ApplySettingsToBatch(settings);
             LocateTools();
+            RefreshBatchFiles();
             var lutCount = RefreshLuts();
             SettingsMessage.Text = $"Settings saved. {lutCount} LUT{(lutCount == 1 ? "" : "s")} available.";
         }
@@ -367,7 +409,9 @@ public partial class MainWindow : Window
             foreach (var file in files)
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                durations[file] = await ProbeDurationAsync(file, _cts.Token);
+                var analyzedDuration = _batchFiles.FirstOrDefault(option =>
+                    string.Equals(option.FilePath, file, StringComparison.OrdinalIgnoreCase))?.Metadata?.DurationSeconds ?? 0;
+                durations[file] = analyzedDuration > 0 ? analyzedDuration : await ProbeDurationAsync(file, _cts.Token);
             }
             var sourceDuration = TimeSpan.FromSeconds(durations.Values.Where(value => value > 0).Sum());
             AppendLog(BatchLogFormatter.Started(total, outputRoot, resolution, recovery, sourceDuration, startedAt));
