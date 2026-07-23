@@ -94,6 +94,8 @@ internal static class FfmpegCommandBuilder
     };
 
     public static List<string> ProbeDuration(string file) => ["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", file];
+    public static List<string> ProbeMetadata(string file) =>
+        ["-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate", "-of", "json", file];
     public static List<string> Inspect(string file) => ["-hide_banner", "-show_format", "-show_streams", file];
     public static List<string> Verify(string file) => ["-v", "warning", "-i", file, "-map", "0:v:0", "-f", "null", "NUL"];
     public static List<string> Rewrap(string input, string output) => ["-hide_banner", "-y", "-i", input, "-map", "0", "-c", "copy", "-movflags", "+faststart", output];

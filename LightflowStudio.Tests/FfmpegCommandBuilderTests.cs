@@ -125,6 +125,7 @@ public sealed class FfmpegCommandBuilderTests
     public void ProbeAndInspectArgumentsTargetProvidedFile()
     {
         Assert.Equal(["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", "clip.mov"], FfmpegCommandBuilder.ProbeDuration("clip.mov"));
+        Assert.Equal(["-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,avg_frame_rate", "-of", "json", "clip.mov"], FfmpegCommandBuilder.ProbeMetadata("clip.mov"));
         Assert.Equal(["-hide_banner", "-show_format", "-show_streams", "clip.mov"], FfmpegCommandBuilder.Inspect("clip.mov"));
     }
 

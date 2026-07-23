@@ -44,23 +44,72 @@
 
       <Border Grid.Row="1" Style="{StaticResource Card}">
        <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Batch Setup"/>
         <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
          <TextBlock Style="{StaticResource FieldLabel}" Text="VIDEO FOLDER"/>
-         <DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseInput_Click"/><TextBox x:Name="InputFolder"/></DockPanel>
+         <DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseInput_Click"/><TextBox x:Name="InputFolder" TextChanged="InputFolder_TextChanged"/></DockPanel>
         </StackPanel>
-        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,8,8,0">
+        <Expander Grid.Row="2" Grid.ColumnSpan="2" Margin="4,10,4,2" IsExpanded="False">
+         <Expander.Header>
+          <StackPanel Orientation="Horizontal">
+           <TextBlock Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Text="Files in this batch"/>
+           <TextBlock x:Name="BatchFileSummary" Margin="10,0,0,0" Foreground="{StaticResource MutedTextBrush}" Text="Choose a folder to see its videos"/>
+          </StackPanel>
+         </Expander.Header>
+         <Border Margin="0,8,0,2" Background="#111318" BorderBrush="#303540" BorderThickness="1" CornerRadius="7" Padding="10">
+          <Grid>
+           <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+           <DockPanel Margin="0,0,0,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+             <Button Padding="10,5" Content="All" Click="SelectAllBatchFiles_Click"/>
+             <Button Padding="10,5" Content="None" Click="SelectNoBatchFiles_Click"/>
+             <Button Padding="10,5" Content="Refresh" Click="RefreshBatchFiles_Click"/>
+            </StackPanel>
+            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="Uncheck any videos you want to skip."/>
+           </DockPanel>
+           <Grid Grid.Row="1" Margin="6,0,14,5">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="88"/><ColumnDefinition Width="76"/><ColumnDefinition Width="90"/><ColumnDefinition Width="84"/></Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="1" Style="{StaticResource FieldLabel}" Text="FILE"/>
+            <TextBlock Grid.Column="2" Style="{StaticResource FieldLabel}" Text="RESOLUTION"/>
+            <TextBlock Grid.Column="3" Style="{StaticResource FieldLabel}" Text="FRAME RATE"/>
+            <TextBlock Grid.Column="4" Style="{StaticResource FieldLabel}" Text="DURATION"/>
+            <TextBlock Grid.Column="5" Style="{StaticResource FieldLabel}" Text="SIZE"/>
+            <TextBlock Grid.Column="6" Style="{StaticResource FieldLabel}" Text="STATUS"/>
+           </Grid>
+           <ListBox Grid.Row="2" x:Name="BatchFileList" MaxHeight="230" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.ItemTemplate>
+             <DataTemplate>
+              <Grid Margin="2,5" ToolTip="{Binding DetailsTooltip}">
+               <Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/><ColumnDefinition Width="88"/><ColumnDefinition Width="76"/><ColumnDefinition Width="90"/><ColumnDefinition Width="84"/></Grid.ColumnDefinitions>
+               <CheckBox VerticalAlignment="Center" IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="BatchFileSelection_Click"/>
+               <TextBlock Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+               <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="{Binding ResolutionText}"/>
+               <TextBlock Grid.Column="3" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="{Binding FrameRateText}"/>
+               <TextBlock Grid.Column="4" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="{Binding DurationText}"/>
+               <TextBlock Grid.Column="5" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" Text="{Binding SizeText}"/>
+               <Border Grid.Column="6" HorizontalAlignment="Left" VerticalAlignment="Center" Background="#3B3218" BorderBrush="#8A7122" BorderThickness="1" CornerRadius="8" Padding="7,2" ToolTip="{Binding WarningTooltip}">
+                <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding HasWarning}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
+                <TextBlock Foreground="#F2D46B" FontSize="10" FontWeight="SemiBold" Text="{Binding WarningLabel}"/>
+               </Border>
+              </Grid>
+             </DataTemplate>
+            </ListBox.ItemTemplate>
+           </ListBox>
+          </Grid>
+         </Border>
+        </Expander>
+        <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,8,8,0">
          <TextBlock Style="{StaticResource FieldLabel}" Text="LUT"/>
          <DockPanel><Button DockPanel.Dock="Right" Content="Refresh" Click="RefreshLuts_Click"/><ComboBox x:Name="LutSelection" DisplayMemberPath="DisplayName" SelectedValuePath="FilePath" SelectionChanged="LutSelection_SelectionChanged"/></DockPanel>
         </StackPanel>
-        <StackPanel Grid.Row="2" Grid.Column="1" Margin="8,8,0,0">
+        <StackPanel Grid.Row="3" Grid.Column="1" Margin="8,8,0,0">
          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
           <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="0"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
           <StackPanel Grid.Column="1" Margin="6,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="RecoveryMode" SelectedIndex="0"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
          </Grid>
-         <WrapPanel Margin="4,6,0,0"><CheckBox x:Name="Recursive" Content="Include subfolders"/><CheckBox x:Name="SkipExisting" IsChecked="True" Content="Skip completed files"/></WrapPanel>
+         <WrapPanel Margin="4,6,0,0"><CheckBox x:Name="Recursive" Content="Include subfolders" Checked="Recursive_Changed" Unchecked="Recursive_Changed"/><CheckBox x:Name="SkipExisting" IsChecked="True" Content="Skip completed files"/></WrapPanel>
         </StackPanel>
        </Grid>
       </Border>

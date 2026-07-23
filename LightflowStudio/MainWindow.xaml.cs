@@ -1,9 +1,11 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 using Forms = System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using MessageBox = System.Windows.MessageBox;
@@ -21,6 +23,9 @@ public partial class MainWindow : Window
     private AppState _state = new();
     private Process? _activeEncodingProcess;
     private readonly EncodingPauseController _encodingPause = new();
+    private readonly ObservableCollection<BatchFileOption> _batchFiles = [];
+    private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private CancellationTokenSource? _batchMetadataCts;
     private Stopwatch? _batchStopwatch;
     private bool _closeAfterCurrent;
     private bool _forceClose;
@@ -30,6 +35,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _batchFolderRefreshTimer.Tick += (_, _) =>
+        {
+            _batchFolderRefreshTimer.Stop();
+            RefreshBatchFiles();
+        };
         SourceInitialized += (_, _) => WindowAppearance.EnableDarkTitleBar(this);
         _commandLineFolder = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(Directory.Exists);
         Loaded += (_, _) =>
@@ -40,7 +50,9 @@ public partial class MainWindow : Window
             PopulateSettingsControls(_settings);
             ApplySettingsToBatch(_settings);
             if (_commandLineFolder is not null) InputFolder.Text = _commandLineFolder;
+            BatchFileList.ItemsSource = _batchFiles;
             LocateTools();
+            RefreshBatchFiles();
             RefreshLuts();
         };
     }
@@ -61,8 +73,82 @@ public partial class MainWindow : Window
 
     private void BrowseInput_Click(object sender, RoutedEventArgs e)
     {
-        if (PickFolder("Select the folder containing video files", InputFolder.Text) is { } folder) InputFolder.Text = folder;
+        if (PickFolder("Select the folder containing video files", InputFolder.Text) is not { } folder) return;
+        InputFolder.Text = folder;
+        RefreshBatchFiles();
     }
+
+    private void InputFolder_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        _batchFolderRefreshTimer.Stop();
+        _batchFolderRefreshTimer.Start();
+    }
+    private void Recursive_Changed(object sender, RoutedEventArgs e)
+    {
+        if (IsLoaded) RefreshBatchFiles();
+    }
+    private void RefreshBatchFiles_Click(object sender, RoutedEventArgs e) => RefreshBatchFiles();
+    private void BatchFileSelection_Click(object sender, RoutedEventArgs e) => UpdateBatchFileSummary();
+    private void SelectAllBatchFiles_Click(object sender, RoutedEventArgs e) => SetBatchFileSelection(true);
+    private void SelectNoBatchFiles_Click(object sender, RoutedEventArgs e) => SetBatchFileSelection(false);
+
+    private void RefreshBatchFiles()
+    {
+        _batchFolderRefreshTimer.Stop();
+        _batchMetadataCts?.Cancel();
+        _batchMetadataCts?.Dispose();
+        _batchMetadataCts = new CancellationTokenSource();
+        _batchFiles.Clear();
+        foreach (var option in BatchFileSelection.Discover(InputFolder.Text, Recursive.IsChecked == true))
+            _batchFiles.Add(option);
+        UpdateBatchFileSummary();
+        _ = LoadBatchMetadataAsync(_batchFiles.ToList(), _batchMetadataCts.Token);
+    }
+
+    private async Task LoadBatchMetadataAsync(IReadOnlyList<BatchFileOption> options, CancellationToken token)
+    {
+        if (_ffprobe is null)
+        {
+            foreach (var option in options) option.MarkMetadataUnavailable();
+            MediaWarningAnalyzer.Apply(options);
+            UpdateBatchFileSummary();
+            return;
+        }
+
+        try
+        {
+            foreach (var option in options)
+            {
+                token.ThrowIfCancellationRequested();
+                var result = await CaptureAsync(_ffprobe, FfmpegCommandBuilder.ProbeMetadata(option.FilePath), token);
+                if (result.ExitCode == 0 && MediaMetadataParser.TryParse(result.StdOut, option.FileSizeBytes, out var metadata))
+                    option.ApplyMetadata(metadata);
+                else
+                    option.MarkMetadataUnavailable();
+                MediaWarningAnalyzer.Apply(options);
+                UpdateBatchFileSummary();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer folder selection replaced this analysis.
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            foreach (var option in options.Where(item => item.IsAnalyzing)) option.MarkMetadataUnavailable();
+            MediaWarningAnalyzer.Apply(options);
+            UpdateBatchFileSummary();
+        }
+    }
+
+    private void SetBatchFileSelection(bool selected)
+    {
+        foreach (var option in _batchFiles) option.IsSelected = selected;
+        UpdateBatchFileSummary();
+    }
+
+    private void UpdateBatchFileSummary() => BatchFileSummary.Text = BatchFileSelection.Summary(_batchFiles);
 
     private void RefreshLuts_Click(object sender, RoutedEventArgs e) => RefreshLuts();
 
@@ -133,6 +219,7 @@ public partial class MainWindow : Window
             _settings = settings;
             ApplySettingsToBatch(settings);
             LocateTools();
+            RefreshBatchFiles();
             var lutCount = RefreshLuts();
             SettingsMessage.Text = $"Settings saved. {lutCount} LUT{(lutCount == 1 ? "" : "s")} available.";
         }
@@ -276,6 +363,7 @@ public partial class MainWindow : Window
         RecoveryMode.SelectedIndex = (int)settings.DefaultRecovery;
         Recursive.IsChecked = settings.IncludeSubfolders;
         SkipExisting.IsChecked = settings.SkipExisting;
+        if (IsLoaded) RefreshBatchFiles();
     }
 
     private void BrowseMedia_Click(object sender, RoutedEventArgs e)
@@ -301,8 +389,8 @@ public partial class MainWindow : Window
 
         try
         {
-            var files = MediaFileCatalog.Discover(InputFolder.Text, Recursive.IsChecked == true);
-            if (files.Count == 0) throw new InvalidOperationException("No supported video files were found.");
+            var files = BatchFileSelection.SelectedFiles(_batchFiles);
+            if (files.Count == 0) throw new InvalidOperationException("Select at least one video file for this batch.");
             total = files.Count;
             _batchProgress.StartBatch(total);
             ApplyProgressState();
@@ -321,7 +409,9 @@ public partial class MainWindow : Window
             foreach (var file in files)
             {
                 _cts.Token.ThrowIfCancellationRequested();
-                durations[file] = await ProbeDurationAsync(file, _cts.Token);
+                var analyzedDuration = _batchFiles.FirstOrDefault(option =>
+                    string.Equals(option.FilePath, file, StringComparison.OrdinalIgnoreCase))?.Metadata?.DurationSeconds ?? 0;
+                durations[file] = analyzedDuration > 0 ? analyzedDuration : await ProbeDurationAsync(file, _cts.Token);
             }
             var sourceDuration = TimeSpan.FromSeconds(durations.Values.Where(value => value > 0).Sum());
             AppendLog(BatchLogFormatter.Started(total, outputRoot, resolution, recovery, sourceDuration, startedAt));
