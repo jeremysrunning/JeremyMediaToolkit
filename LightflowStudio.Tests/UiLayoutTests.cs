@@ -6,6 +6,17 @@ namespace LightflowStudio.Tests;
 public class UiLayoutTests
 {
     [Fact]
+    public void ActivityLog_IsCollapsedByDefault()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var ns = document.Root!.Name.Namespace;
+        var expander = document.Descendants(ns + "Expander")
+            .Single(element => element.Attributes().Any(attribute =>
+                attribute.Name.LocalName == "Name" && attribute.Value == "ActivityLogExpander"));
+
+        Assert.Equal("False", (string?)expander.Attribute("IsExpanded"));
+    }
+    [Fact]
     public void BatchSetup_DirectChildrenOnlyUseDefinedRows()
     {
         var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));

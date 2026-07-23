@@ -2,7 +2,7 @@
 
 **Video processing and workflow tools by Jeremy Running Photography.**
 
-Current version: **0.5.0**
+Current version: **0.5.1**
 
 Lightflow Studio is a native C#/.NET 8 WPF desktop application for preparing, processing, inspecting, and recovering video media.
 
@@ -20,6 +20,7 @@ Lightflow Studio is a native C#/.NET 8 WPF desktop application for preparing, pr
 - High-quality NVIDIA NVENC H.264 (`p7`, full-resolution multipass, adaptive quantization)
 - Normal, salvage, and video-only recovery modes
 - Per-file progress, overall progress, and estimated time remaining
+- Collapsible Activity Log that stays out of the way until needed
 - Remembers the most recently selected LUT and records batch lifecycle summaries
 - Protects active encodes with finish-current, close-now, and keep-running close options
 - Optional recursive processing and resume/skip support
