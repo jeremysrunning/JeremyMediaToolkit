@@ -11,26 +11,30 @@
     <Grid.RowDefinitions>
      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+     <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
     <TextBlock Grid.Row="0" VerticalAlignment="Center" Text="Video folder"/><TextBox x:Name="InputFolder" Grid.Row="0" Grid.Column="1"/>
     <Button Grid.Row="0" Grid.Column="2" Content="Browse…" Click="BrowseInput_Click"/>
-    <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="LUT (.cube)"/><TextBox x:Name="LutPath" Grid.Row="1" Grid.Column="1"/>
-    <Button Grid.Row="1" Grid.Column="2" Content="Browse…" Click="BrowseLut_Click"/>
-    <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="Resolution"/><ComboBox x:Name="Resolution" Grid.Row="2" Grid.Column="1" SelectedIndex="0">
+    <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="LUT folder"/><TextBox x:Name="LutFolder" Grid.Row="1" Grid.Column="1" IsReadOnly="True"/>
+    <Button Grid.Row="1" Grid.Column="2" Content="Browse…" Click="BrowseLutFolder_Click"/>
+    <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="LUT"/><ComboBox x:Name="LutSelection" Grid.Row="2" Grid.Column="1"
+     DisplayMemberPath="DisplayName" SelectedValuePath="FilePath"/>
+    <Button Grid.Row="2" Grid.Column="2" Content="Refresh" Click="RefreshLuts_Click"/>
+    <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Resolution"/><ComboBox x:Name="Resolution" Grid.Row="3" Grid.Column="1" SelectedIndex="0">
      <ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox>
-    <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Recovery mode"/><ComboBox x:Name="RecoveryMode" Grid.Row="3" Grid.Column="1" SelectedIndex="0">
+    <TextBlock Grid.Row="4" VerticalAlignment="Center" Text="Recovery mode"/><ComboBox x:Name="RecoveryMode" Grid.Row="4" Grid.Column="1" SelectedIndex="0">
      <ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox>
-    <CheckBox x:Name="Recursive" Grid.Row="4" Grid.Column="1" Margin="5" Content="Include subfolders"/>
-    <CheckBox x:Name="SkipExisting" Grid.Row="5" Grid.Column="1" Margin="5" IsChecked="True" Content="Skip completed output files"/>
-    <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Left">
+    <CheckBox x:Name="Recursive" Grid.Row="5" Grid.Column="1" Margin="5" Content="Include subfolders"/>
+    <CheckBox x:Name="SkipExisting" Grid.Row="6" Grid.Column="1" Margin="5" IsChecked="True" Content="Skip completed output files"/>
+    <StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Left">
      <Button x:Name="StartButton" Content="Start Encoding" Click="Start_Click"/><Button x:Name="CancelButton" Content="Cancel" IsEnabled="False" Click="Cancel_Click"/>
     </StackPanel>
-    <TextBlock Grid.Row="7" Grid.ColumnSpan="3" x:Name="CurrentFileText" Margin="4" Text="Ready" TextTrimming="CharacterEllipsis"/>
-    <ProgressBar Grid.Row="8" Grid.ColumnSpan="3" x:Name="FileProgress" Height="18" Margin="4" Maximum="100"/>
-    <ProgressBar Grid.Row="9" Grid.ColumnSpan="3" x:Name="BatchProgress" Height="18" Margin="4" Maximum="100"/>
-    <TextBlock Grid.Row="10" Grid.ColumnSpan="3" x:Name="EtaText" Margin="4"/>
-    <TextBox Grid.Row="11" Grid.ColumnSpan="3" x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+    <TextBlock Grid.Row="8" Grid.ColumnSpan="3" x:Name="CurrentFileText" Margin="4" Text="Ready" TextTrimming="CharacterEllipsis"/>
+    <ProgressBar Grid.Row="9" Grid.ColumnSpan="3" x:Name="FileProgress" Height="18" Margin="4" Maximum="100"/>
+    <ProgressBar Grid.Row="10" Grid.ColumnSpan="3" x:Name="BatchProgress" Height="18" Margin="4" Maximum="100"/>
+    <TextBlock Grid.Row="11" Grid.ColumnSpan="3" x:Name="EtaText" Margin="4"/>
+    <TextBox Grid.Row="12" Grid.ColumnSpan="3" x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
    </Grid></ScrollViewer></TabItem>
    <TabItem Header="Media Tools"><Grid Margin="12">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>

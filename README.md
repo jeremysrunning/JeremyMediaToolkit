@@ -4,7 +4,7 @@ A native C#/.NET 8 WPF desktop utility for Jeremy Running Photography video work
 
 ## Features
 
-- Folder batch encoding with a selectable `.cube` LUT
+- Folder batch encoding with a dropdown of `.cube` LUTs from a configurable folder
 - 1080p, 4K UHD, or source-resolution output
 - High-quality NVIDIA NVENC H.264 (`p7`, full-resolution multipass, adaptive quantization)
 - Normal, salvage, and video-only recovery modes
@@ -91,6 +91,7 @@ See `PremiereHelper\README.txt`. Adobe has changed Premiere scripting support ov
 ## Notes
 
 - Originals are never overwritten. Encoded files go into a new `Toolkit-*` subfolder.
+- The LUT dropdown defaults to `J:\Photography\LUTs`. Choose another LUT folder in the app to save it as the new default, or use **Refresh** after adding LUT files to the current folder.
 - 4K output is 3840×2160 with aspect-preserving scale and letterbox/pillarbox padding when required.
 - Contact sheets sample one frame every ten seconds and use the first 16 samples.
 - v0.2 is source-complete; FFmpeg binaries are intentionally not redistributed.

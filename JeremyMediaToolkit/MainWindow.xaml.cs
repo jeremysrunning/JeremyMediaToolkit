@@ -21,7 +21,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Loaded += (_, _) => LocateTools();
+        Loaded += (_, _) =>
+        {
+            LocateTools();
+            LutFolder.Text = AppSettingsStore.Load(AppSettingsStore.SettingsPath).LutFolder;
+            RefreshLuts();
+        };
         if (Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(Directory.Exists) is string folder)
             InputFolder.Text = folder;
     }
@@ -60,11 +65,28 @@ public partial class MainWindow : Window
     }
 
     private void BrowseInput_Click(object sender, RoutedEventArgs e) { if (PickFolder("Select the folder containing video files") is { } p) InputFolder.Text = p; }
-    private void BrowseLut_Click(object sender, RoutedEventArgs e)
+    private void BrowseLutFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new OpenFileDialog { Filter = "Cube LUT (*.cube)|*.cube", Title = "Select LUT" };
-        if (dlg.ShowDialog() == true) LutPath.Text = dlg.FileName;
+        if (PickFolder("Select the folder containing .cube LUT files") is not { } folder) return;
+        LutFolder.Text = folder;
+        AppSettingsStore.Save(AppSettingsStore.SettingsPath, new AppSettings(folder));
+        RefreshLuts();
     }
+
+    private void RefreshLuts_Click(object sender, RoutedEventArgs e) => RefreshLuts();
+
+    private void RefreshLuts()
+    {
+        var selectedPath = LutSelection.SelectedValue as string;
+        var options = LutCatalog.Discover(LutFolder.Text);
+        LutSelection.ItemsSource = options;
+        LutSelection.SelectedItem = options.FirstOrDefault(option =>
+            string.Equals(option.FilePath, selectedPath, StringComparison.OrdinalIgnoreCase)) ?? options.FirstOrDefault();
+        StatusText.Text = options.Count == 0
+            ? $"No .cube LUT files found in {LutFolder.Text}"
+            : $"Loaded {options.Count} LUT{(options.Count == 1 ? "" : "s")}";
+    }
+
     private void BrowseMedia_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog { Filter = "Video files|*.mp4;*.mov;*.mxf;*.mkv;*.avi|All files|*.*" };
@@ -110,7 +132,7 @@ public partial class MainWindow : Window
                     AppendLog($"Skipped existing: {output}"); completed++; UpdateBatch(completed, files.Count, batchStart); continue;
                 }
                 var duration = await ProbeDurationAsync(input, _cts.Token);
-                var args = BuildEncodeArguments(input, output, LutPath.Text, mode);
+                var args = BuildEncodeArguments(input, output, SelectedLutPath!, mode);
                 var exit = await RunFfmpegProgressAsync(args, duration, p =>
                 {
                     _batchProgress.ReportFileProgress(p);
@@ -130,9 +152,11 @@ public partial class MainWindow : Window
     {
         if (_ffmpeg is null || !File.Exists(_ffmpeg)) { MessageBox.Show("FFmpeg was not found. Use FFmpeg Settings to select ffmpeg.exe."); return false; }
         if (!Directory.Exists(InputFolder.Text)) { MessageBox.Show("Select a valid video folder."); return false; }
-        if (!File.Exists(LutPath.Text) || !LutPath.Text.EndsWith(".cube", StringComparison.OrdinalIgnoreCase)) { MessageBox.Show("Select a valid .cube LUT."); return false; }
+        if (SelectedLutPath is not { } lut || !File.Exists(lut) || !lut.EndsWith(".cube", StringComparison.OrdinalIgnoreCase)) { MessageBox.Show("Select a valid .cube LUT from the LUT dropdown."); return false; }
         return true;
     }
+
+    private string? SelectedLutPath => (LutSelection.SelectedItem as LutOption)?.FilePath;
 
     private List<string> BuildEncodeArguments(string input, string output, string lut, int mode)
     {
