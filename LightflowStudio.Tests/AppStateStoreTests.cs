@@ -17,7 +17,21 @@ public sealed class AppStateStoreTests : IDisposable
     [Fact]
     public void SaveAndLoad_RoundTripsLastLutPath()
     {
-        var expected = new AppState(@"D:\LUTs\Selected.cube");
+        var expected = new AppState(@"D:\LUTs\Selected.cube")
+        {
+            HasBatchState = true,
+            LastVideoFolder = @"D:\Videos",
+            LastResolution = OutputResolution.UltraHd,
+            LastRecovery = RecoveryStrategy.Salvage,
+            LastIncludeSubfolders = true,
+            LastSkipExisting = false,
+            LastOutputMode = OutputDestinationMode.SpecificFolder,
+            LastOutputSubfolder = "Deliverables",
+            LastOutputSubfolderUsesResolutionDefault = false,
+            LastSpecificOutputFolder = @"E:\Exports",
+            LastFilenameSuffix = "_Web",
+            LastFilenameSuffixUsesResolutionDefault = false
+        };
 
         AppStateStore.Save(StatePath, expected);
 

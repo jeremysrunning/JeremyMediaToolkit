@@ -36,7 +36,7 @@
    <TabItem>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
      <Grid Margin="28,24,28,28">
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <StackPanel Margin="2,0,0,20">
        <TextBlock Style="{StaticResource PageTitle}" Text="Batch Encode"/>
        <TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Apply a LUT and create consistent, edit-ready H.264 files from an entire folder."/>
@@ -44,14 +44,14 @@
 
       <Border Grid.Row="1" Style="{StaticResource Card}">
        <Grid>
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Batch Setup"/>
         <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
          <TextBlock Style="{StaticResource FieldLabel}" Text="VIDEO FOLDER"/>
          <DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseInput_Click"/><TextBox x:Name="InputFolder" TextChanged="InputFolder_TextChanged"/></DockPanel>
         </StackPanel>
-        <Expander Grid.Row="2" Grid.ColumnSpan="2" Margin="4,10,4,2" IsExpanded="False">
+        <Expander Grid.Row="2" Grid.ColumnSpan="2" Margin="4,8,4,0" IsExpanded="False">
          <Expander.Header>
           <StackPanel Orientation="Horizontal">
            <TextBlock Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Text="Files in this batch"/>
@@ -100,13 +100,34 @@
           </Grid>
          </Border>
         </Expander>
-        <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,8,8,0">
+        <Border Grid.Row="3" Grid.ColumnSpan="2" Margin="0,10,0,0" Padding="0,10,0,0" BorderBrush="#2A2E37" BorderThickness="0,1,0,0">
+        <Grid>
+         <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+         <StackPanel Margin="0,0,8,0">
+          <TextBlock Style="{StaticResource FieldLabel}" Text="OUTPUT LOCATION"/>
+          <ComboBox x:Name="OutputMode" SelectionChanged="OutputMode_SelectionChanged"><ComboBoxItem Content="Same folder as source"/><ComboBoxItem Content="Subfolder"/><ComboBoxItem Content="Specific folder"/></ComboBox>
+         </StackPanel>
+         <StackPanel Grid.Column="1" x:Name="OutputSameFolderPanel" Margin="8,0,0,0">
+          <TextBlock Style="{StaticResource FieldLabel}" Text="FILENAME SUFFIX"/>
+          <TextBox x:Name="OutputFilenameSuffix" TextChanged="OutputFilenameSuffix_TextChanged" LostKeyboardFocus="OutputDestination_LostKeyboardFocus"/>
+         </StackPanel>
+         <StackPanel Grid.Column="1" x:Name="OutputSubfolderPanel" Margin="8,0,0,0">
+          <TextBlock Style="{StaticResource FieldLabel}" Text="SUBFOLDER NAME"/>
+          <TextBox x:Name="OutputSubfolderName" TextChanged="OutputSubfolderName_TextChanged" LostKeyboardFocus="OutputDestination_LostKeyboardFocus"/>
+         </StackPanel>
+         <StackPanel Grid.Column="1" x:Name="OutputSpecificPanel" Margin="8,0,0,0">
+          <TextBlock Style="{StaticResource FieldLabel}" Text="SPECIFIC OUTPUT FOLDER"/>
+          <DockPanel><Button DockPanel.Dock="Right" Content="Browse…" Click="BrowseOutputFolder_Click"/><TextBox x:Name="OutputSpecificFolder" LostKeyboardFocus="OutputDestination_LostKeyboardFocus"/></DockPanel>
+         </StackPanel>
+        </Grid>
+        </Border>
+        <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,10,8,0">
          <TextBlock Style="{StaticResource FieldLabel}" Text="LUT"/>
          <DockPanel><Button DockPanel.Dock="Right" Content="Refresh" Click="RefreshLuts_Click"/><ComboBox x:Name="LutSelection" DisplayMemberPath="DisplayName" SelectedValuePath="FilePath" SelectionChanged="LutSelection_SelectionChanged"/></DockPanel>
         </StackPanel>
-        <StackPanel Grid.Row="3" Grid.Column="1" Margin="8,8,0,0">
+        <StackPanel Grid.Row="4" Grid.Column="1" Margin="8,10,0,0">
          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-          <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="0"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
+          <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="0" SelectionChanged="Resolution_SelectionChanged"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
           <StackPanel Grid.Column="1" Margin="6,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="RecoveryMode" SelectedIndex="0"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
          </Grid>
          <WrapPanel Margin="4,6,0,0"><CheckBox x:Name="Recursive" Content="Include subfolders" Checked="Recursive_Changed" Unchecked="Recursive_Changed"/><CheckBox x:Name="SkipExisting" IsChecked="True" Content="Skip completed files"/></WrapPanel>
@@ -199,6 +220,7 @@
       <StackPanel Grid.Row="1" Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="SettingsResolution"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
       <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="SettingsRecoveryMode"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
       <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="4,8,0,0"><CheckBox x:Name="SettingsRecursive" Content="Include subfolders by default"/><CheckBox x:Name="SettingsSkipExisting" Content="Skip completed output files by default"/></WrapPanel>
+
      </Grid></Border>
      <Border Grid.Row="3" Style="{StaticResource Card}">
       <StackPanel>

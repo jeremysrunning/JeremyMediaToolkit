@@ -4,8 +4,8 @@ namespace LightflowStudio;
 
 internal static class BatchFileSelection
 {
-    public static IReadOnlyList<BatchFileOption> Discover(string folder, bool recursive) =>
-        MediaFileCatalog.Discover(folder, recursive)
+    public static IReadOnlyList<BatchFileOption> Discover(string folder, bool recursive, string? excludedFolder = null, string? excludedFilenameSuffix = null) =>
+        MediaFileCatalog.Discover(folder, recursive, excludedFolder, excludedFilenameSuffix)
             .Select(path => new BatchFileOption(path, Path.GetRelativePath(folder, path), new FileInfo(path).Length))
             .ToList();
 

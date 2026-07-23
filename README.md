@@ -2,13 +2,14 @@
 
 **Video processing and workflow tools by Jeremy Running Photography.**
 
-Current version: **0.4.0**
+Current version: **0.5.0**
 
 Lightflow Studio is a native C#/.NET 8 WPF desktop application for preparing, processing, inspecting, and recovering video media.
 
 ## Features
 
 - Folder batch encoding with a collapsed per-file picker, allowing individual videos to be skipped before a batch begins
+- Flexible batch destinations: source folders, named subfolders, or a specific output folder
 - Asynchronous file details with resolution, frame rate, duration, size, codec/audio tooltips, and warning badges for media outliers
 - Configurable `.cube` LUT library with a friendly selection dropdown
 - Dedicated Settings tab for default folders, FFmpeg, batch preferences, and advanced encoding controls
@@ -132,9 +133,9 @@ See `PremiereHelper\README.txt`. Adobe has changed Premiere scripting support ov
 
 ## Notes
 
-- Originals are never overwritten. Encoded files go into a new `Lightflow-*` subfolder. HEVC and non-MP4 jobs receive distinct folder suffixes so skip-existing behavior cannot confuse different output formats.
+- Batch output can remain beside each source with a customizable filename suffix, go into a named subfolder, or use a specific destination. Source-relative folders are preserved.
 - The LUT dropdown defaults to `J:\Photography\LUTs`. Choose another LUT folder in Settings, or use **Refresh** after adding LUT files to the current folder.
-- Application preferences are saved under `%LOCALAPPDATA%\Jeremy Running Photography\Lightflow Studio\settings.json` and restored at startup.
+- Application defaults are saved in `settings.json`, while the most recently used batch choices are remembered separately in `state.json` under `%LOCALAPPDATA%\Jeremy Running Photography\Lightflow Studio`.
 - 4K output is 3840×2160 with aspect-preserving scale and letterbox/pillarbox padding when required.
 - Contact sheets sample one frame every ten seconds and use the first 16 samples.
 - FFmpeg binaries are intentionally not redistributed.
