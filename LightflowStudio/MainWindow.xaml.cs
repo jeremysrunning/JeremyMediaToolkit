@@ -184,14 +184,14 @@ public partial class MainWindow : Window
     private void SetResolutionFilenameSuffix()
     {
         _updatingFilenameSuffix = true;
-        OutputFilenameSuffix.Text = $"_{EncodingPathPlanner.ResolutionName((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2))}";
+        OutputFilenameSuffix.Text = $"_{EncodingPathPlanner.ResolutionName((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5))}";
         _updatingFilenameSuffix = false;
         _filenameSuffixUsesResolutionDefault = true;
     }
     private void SetResolutionSubfolderName()
     {
         _updatingSubfolderName = true;
-        OutputSubfolderName.Text = EncodingPathPlanner.ResolutionName((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2));
+        OutputSubfolderName.Text = EncodingPathPlanner.ResolutionName((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5));
         _updatingSubfolderName = false;
         _subfolderUsesResolutionDefault = true;
     }
@@ -240,7 +240,7 @@ public partial class MainWindow : Window
         {
             if ((OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2) != OutputDestinationMode.SameFolder)
             {
-                var candidate = OutputDestinationPlanner.ResolveRoot(InputFolder.Text, (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2), CurrentOutputDestination());
+                var candidate = OutputDestinationPlanner.ResolveRoot(InputFolder.Text, (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5), CurrentOutputDestination());
                 if (!string.Equals(Path.GetFullPath(candidate).TrimEnd(Path.DirectorySeparatorChar), Path.GetFullPath(InputFolder.Text).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)) excludedOutput = candidate;
             }
         }
@@ -249,7 +249,7 @@ public partial class MainWindow : Window
         try
         {
             if ((OutputDestinationMode)Math.Clamp(OutputMode.SelectedIndex, 0, 2) == OutputDestinationMode.SameFolder)
-                excludedSuffix = OutputDestinationPlanner.ResolveFilenameSuffix((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2), CurrentOutputDestination());
+                excludedSuffix = OutputDestinationPlanner.ResolveFilenameSuffix((OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5), CurrentOutputDestination());
         }
         catch (ArgumentException) { }
         foreach (var option in BatchFileSelection.Discover(InputFolder.Text, Recursive.IsChecked == true, excludedOutput, excludedSuffix))
@@ -575,7 +575,7 @@ public partial class MainWindow : Window
         {
             HasBatchState = true,
             LastVideoFolder = InputFolder.Text,
-            LastResolution = (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2),
+            LastResolution = (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5),
             LastRecovery = (RecoveryStrategy)Math.Clamp(RecoveryMode.SelectedIndex, 0, 2),
             LastIncludeSubfolders = Recursive.IsChecked == true,
             LastPreserveFolderStructure = PreserveFolderStructure.IsChecked == true,
@@ -756,7 +756,7 @@ public partial class MainWindow : Window
         try
         {
             var outputOptions = CurrentOutputDestination();
-            var outputResolution = (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 2);
+            var outputResolution = (OutputResolution)Math.Clamp(Resolution.SelectedIndex, 0, 5);
             var outputRoot = OutputDestinationPlanner.ResolveRoot(InputFolder.Text, outputResolution, outputOptions);
             var suffix = OutputDestinationPlanner.ResolveFilenameSuffix(outputResolution, outputOptions);
             var jobs = BatchFileSelection.SelectedFiles(_batchFiles)

@@ -2,7 +2,10 @@ namespace LightflowStudio;
 
 internal enum OutputResolution
 {
+    Sd480,
+    Hd720,
     FullHd,
+    Qhd1440,
     UltraHd,
     Source
 }

@@ -23,7 +23,10 @@ internal static class FfmpegCommandBuilder
         if (options.FrameRate > 0) filters.Add($"fps={options.FrameRate.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
         filters.AddRange(resolution switch
         {
+            OutputResolution.Sd480 => ["scale=-2:480"],
+            OutputResolution.Hd720 => ["scale=-2:720"],
             OutputResolution.FullHd => ["scale=-2:1080"],
+            OutputResolution.Qhd1440 => ["scale=-2:1440"],
             OutputResolution.UltraHd => ["scale=3840:2160:force_original_aspect_ratio=decrease", "pad=3840:2160:(ow-iw)/2:(oh-ih)/2"],
             OutputResolution.Source => [],
             _ => throw new ArgumentOutOfRangeException(nameof(resolution))

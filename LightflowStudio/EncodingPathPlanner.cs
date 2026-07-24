@@ -6,7 +6,10 @@ internal static class EncodingPathPlanner
 {
     public static string ResolutionName(OutputResolution resolution) => resolution switch
     {
+        OutputResolution.Sd480 => "480p",
+        OutputResolution.Hd720 => "720p",
         OutputResolution.FullHd => "1080p",
+        OutputResolution.Qhd1440 => "1440p",
         OutputResolution.UltraHd => "4K",
         OutputResolution.Source => "Source",
         _ => throw new ArgumentOutOfRangeException(nameof(resolution))

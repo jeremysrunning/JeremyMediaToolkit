@@ -18,7 +18,7 @@ Lightflow Studio is a native C#/.NET 8 WPF desktop application for preparing, pr
 - Named encoding presets with recommended-default restoration and custom overrides
 - NVIDIA NVENC H.264/HEVC with quality, bitrate, tuning, multipass, AQ, 8/10-bit, frame-rate, deinterlace, audio, and container controls
 - Branded dark-studio interface with card-based workflows and a multi-size Windows application icon
-- 1080p, 4K UHD, or source-resolution output
+- 480p, 720p, 1080p, 1440p, 4K UHD, or source-resolution output
 - High-quality NVIDIA NVENC H.264 (`p7`, full-resolution multipass, adaptive quantization)
 - Normal, salvage, and video-only recovery modes
 - Per-file progress, overall progress, and estimated time remaining

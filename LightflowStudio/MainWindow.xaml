@@ -134,7 +134,7 @@
         </StackPanel>
         <StackPanel Grid.Row="4" Grid.Column="1" Margin="8,10,0,0">
          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-          <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="0" SelectionChanged="Resolution_SelectionChanged"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
+          <StackPanel Margin="0,0,6,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="Resolution" SelectedIndex="2" SelectionChanged="Resolution_SelectionChanged"><ComboBoxItem Content="480p (854×480)"/><ComboBoxItem Content="720p (1280×720)"/><ComboBoxItem Content="1080p (1920×1080)"/><ComboBoxItem Content="1440p (2560×1440)"/><ComboBoxItem Content="4K UHD (3840×2160)"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
           <StackPanel Grid.Column="1" Margin="6,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="RecoveryMode" SelectedIndex="0"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
          </Grid>
         </StackPanel>
@@ -226,7 +226,7 @@
      </Grid></Border>
      <Border Grid.Row="2" Style="{StaticResource Card}"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <TextBlock Grid.ColumnSpan="2" Style="{StaticResource SectionTitle}" Margin="4,0,4,12" Text="Batch Encode Defaults"/>
-      <StackPanel Grid.Row="1" Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="SettingsResolution"><ComboBoxItem Content="1080p"/><ComboBoxItem Content="4K UHD"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
+      <StackPanel Grid.Row="1" Margin="0,0,8,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RESOLUTION"/><ComboBox x:Name="SettingsResolution"><ComboBoxItem Content="480p (854×480)"/><ComboBoxItem Content="720p (1280×720)"/><ComboBoxItem Content="1080p (1920×1080)"/><ComboBoxItem Content="1440p (2560×1440)"/><ComboBoxItem Content="4K UHD (3840×2160)"/><ComboBoxItem Content="Source resolution"/></ComboBox></StackPanel>
       <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,0"><TextBlock Style="{StaticResource FieldLabel}" Text="RECOVERY MODE"/><ComboBox x:Name="SettingsRecoveryMode"><ComboBoxItem Content="Normal"/><ComboBoxItem Content="Salvage audio + video"/><ComboBoxItem Content="Video only"/></ComboBox></StackPanel>
       <WrapPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="4,8,0,0"><CheckBox x:Name="SettingsRecursive" Content="Include subfolders by default" Checked="SettingsRecursive_Changed" Unchecked="SettingsRecursive_Changed"/><CheckBox x:Name="SettingsPreserveFolderStructure" Content="Preserve source folder structure by default" Visibility="Collapsed"/><CheckBox x:Name="SettingsOverwriteExisting" Content="Overwrite existing output files by default"/></WrapPanel>
 

@@ -6,7 +6,10 @@ namespace LightflowStudio.Tests;
 public sealed class EncodingPathPlannerTests
 {
     [Theory]
+    [InlineData((int)OutputResolution.Sd480, "480p")]
+    [InlineData((int)OutputResolution.Hd720, "720p")]
     [InlineData((int)OutputResolution.FullHd, "1080p")]
+    [InlineData((int)OutputResolution.Qhd1440, "1440p")]
     [InlineData((int)OutputResolution.UltraHd, "4K")]
     [InlineData((int)OutputResolution.Source, "Source")]
     public void ResolutionName_MapsEveryResolution(int resolution, string expected)

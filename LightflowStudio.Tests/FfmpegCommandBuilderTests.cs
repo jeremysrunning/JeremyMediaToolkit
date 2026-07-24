@@ -38,6 +38,17 @@ public sealed class FfmpegCommandBuilderTests
         Assert.Contains("lut3d=file='lut',scale=3840:2160:force_original_aspect_ratio=decrease,pad=3840:2160:(ow-iw)/2:(oh-ih)/2", args);
     }
 
+    [Theory]
+    [InlineData(OutputResolution.Sd480, "scale=-2:480")]
+    [InlineData(OutputResolution.Hd720, "scale=-2:720")]
+    [InlineData(OutputResolution.Qhd1440, "scale=-2:1440")]
+    internal void Encode_AppliesScaleFilterForEveryAspectPreservingResolution(OutputResolution resolution, string expectedScale)
+    {
+        var args = FfmpegCommandBuilder.Encode("in", "out", "lut", RecoveryStrategy.Normal, resolution);
+
+        AssertContainsSequence(args, "-vf", $"lut3d=file='lut',{expectedScale}");
+    }
+
     [Fact]
     public void Encode_RejectsUnknownResolution()
     {
