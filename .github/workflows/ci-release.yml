@@ -15,8 +15,8 @@ jobs:
     name: Unit tests
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
       - name: Restore
@@ -25,7 +25,7 @@ jobs:
         run: dotnet test .\LightflowStudio.Tests\LightflowStudio.Tests.csproj -c Release --no-restore --logger "trx;LogFileName=tests.trx"
       - name: Preserve test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results
           path: "**/TestResults/*.trx"
@@ -37,8 +37,8 @@ jobs:
     needs: test
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
       - name: Install installer compiler
@@ -50,7 +50,7 @@ jobs:
           $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "" }
           .\scripts\Build-Release.ps1 -Version $version
       - name: Upload installer, portable ZIP, and checksums
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lightflow-studio-windows
           path: dist/*
@@ -65,7 +65,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: lightflow-studio-windows
           path: dist
