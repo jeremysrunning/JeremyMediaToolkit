@@ -47,17 +47,37 @@ public class MediaMetadataTests
         Assert.Equal("4 GB", option.SizeText);
     }
 
-    [Fact]
-    public void WarningAnalyzer_FlagsMissingAudioAndOutliers()
+    [Theory]
+    [InlineData(23.976)]
+    [InlineData(24)]
+    [InlineData(25)]
+    [InlineData(29.97)]
+    [InlineData(30)]
+    [InlineData(50)]
+    [InlineData(59.94)]
+    [InlineData(60)]
+    [InlineData(59.94006)]
+    public void WarningAnalyzer_AcceptsStandardFrameRates(double frameRate)
     {
-        var first = Option("first", new MediaMetadata(3840, 2160, 59.94, 60, 100, "hevc", true));
-        var second = Option("second", new MediaMetadata(3840, 2160, 59.94, 60, 100, "hevc", true));
-        var outlier = Option("outlier", new MediaMetadata(1920, 1080, 29.97, 60, 100, "h264", false));
-        MediaWarningAnalyzer.Apply([first, second, outlier]);
-        Assert.False(first.HasWarning);
-        Assert.Equal("NO AUDIO", outlier.WarningLabel);
-        Assert.Contains("Resolution differs", outlier.WarningTooltip);
-        Assert.Contains("Frame rate differs", outlier.WarningTooltip);
+        Assert.True(MediaWarningAnalyzer.IsStandardFrameRate(frameRate));
+    }
+
+    [Fact]
+    public void WarningAnalyzer_FlagsOnlyActionableMediaConditions()
+    {
+        var differentResolution = Option("different", new MediaMetadata(1920, 1080, 29.97, 60, 100, "h264", true));
+        var nonStandard = Option("odd-fps", new MediaMetadata(3840, 2160, 27, 60, 100, "hevc", true));
+        var noAudio = Option("silent", new MediaMetadata(3840, 2160, 60, 60, 100, "hevc", false));
+        var both = Option("both", new MediaMetadata(3840, 2160, 27, 60, 100, "hevc", false));
+
+        MediaWarningAnalyzer.Apply([differentResolution, nonStandard, noAudio, both]);
+
+        Assert.False(differentResolution.HasWarning);
+        Assert.Equal("NON-STANDARD FPS", nonStandard.WarningLabel);
+        Assert.Contains("drop or duplicate frames", nonStandard.WarningTooltip);
+        Assert.Equal("NO AUDIO", noAudio.WarningLabel);
+        Assert.Equal("CHECK MEDIA", both.WarningLabel);
+        Assert.DoesNotContain("differs", string.Join(" ", new[] { nonStandard.WarningTooltip, noAudio.WarningTooltip, both.WarningTooltip }), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
