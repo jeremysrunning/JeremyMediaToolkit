@@ -27,7 +27,7 @@ public partial class MainWindow : Window
     private readonly EncodingPauseController _encodingPause = new();
     private readonly ObservableCollection<BatchFileOption> _batchFiles = [];
     private readonly BatchFileSelectionMemory _batchSelectionMemory = new();
-    private readonly ActivityLogFile _activityLogFile = ActivityLogFile.BesideSettings(AppSettingsStore.SettingsPath);
+    private readonly ActivityLogFile _activityLogFile = App.ActivityLog;
     private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private CancellationTokenSource? _batchMetadataCts;
     private readonly Dictionary<ToggleButton, CancellationTokenSource> _requirementHelpDismissals = [];
@@ -83,6 +83,7 @@ public partial class MainWindow : Window
         DependencyResults.ItemsSource = report.Items;
         DependencySummary.Text = report.Summary;
         StatusText.Text = report.IsReady ? "Encoding tools ready" : "Encoding setup needs attention — open Settings";
+        _activityLogFile.TryAppend($"[App] Dependency check: {report.Summary}");
     }
 
     private void RequirementHelp_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -289,6 +290,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
+            _activityLogFile.TryAppend($"[App] Metadata probe failed: {ex}");
             foreach (var option in options.Where(item => item.IsAnalyzing)) option.MarkMetadataUnavailable();
             MediaWarningAnalyzer.Apply(options);
             UpdateBatchFileSummary();
@@ -348,6 +350,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            _activityLogFile.TryAppend($"[App] Could not remember LUT selection: {ex}");
             SettingsMessage.Text = $"Could not remember LUT selection: {ex.Message}";
         }
     }
@@ -398,6 +401,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            _activityLogFile.TryAppend($"[App] Could not save settings: {ex}");
             MessageBox.Show(ex.Message, "Could not save settings", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -689,7 +693,7 @@ public partial class MainWindow : Window
 
                 var detailedOutput = ShowEncodingDetails.IsChecked == true;
                 var args = FfmpegCommandBuilder.Encode(input, output, SelectedLutPath!, recovery, resolution, detailedOutput, _settings.Encoding);
-                if (detailedOutput) AppendLog($"[App] Starting FFmpeg: {FormatCommand(_ffmpeg!, args)}");
+                AppendDetailedLog($"Starting FFmpeg: {FormatCommand(_ffmpeg!, args)}");
                 var exit = await RunFfmpegProgressAsync(args, durations[input], detailedOutput, p =>
                 {
                     _batchProgress.ReportFileProgress(p);
@@ -787,7 +791,8 @@ public partial class MainWindow : Window
                 while (await process.StandardError.ReadLineAsync(token) is { } line)
                 {
                     errors.AppendLine(line);
-                    if (detailedOutput) AppendLog($"[FFmpeg] {line}");
+                    _activityLogFile.TryAppend($"[FFmpeg] {line}");
+                    if (detailedOutput) ShowInActivityLog($"[FFmpeg] {line}");
                 }
             }, token);
             while (await process.StandardOutput.ReadLineAsync(token) is { } line)
@@ -796,7 +801,7 @@ public partial class MainWindow : Window
             }
             await process.WaitForExitAsync(token);
             await errTask;
-            if (process.ExitCode != 0 && !detailedOutput) AppendLog(errors.ToString());
+            if (process.ExitCode != 0 && !detailedOutput) ShowInActivityLog(errors.ToString());
             progress(100);
             return process.ExitCode;
         }
@@ -932,6 +937,11 @@ public partial class MainWindow : Window
     private void AppendLog(string text)
     {
         _activityLogFile.TryAppend(text);
+        ShowInActivityLog(text);
+    }
+
+    private void ShowInActivityLog(string text)
+    {
         Dispatcher.Invoke(() =>
         {
             LogBox.Text = ActivityLog.Append(LogBox.Text, text);
@@ -942,7 +952,9 @@ public partial class MainWindow : Window
 
     private void AppendDetailedLog(string text)
     {
-        if (ShowEncodingDetails.IsChecked == true) AppendLog($"[App] {text}");
+        var line = $"[App] {text}";
+        _activityLogFile.TryAppend(line);
+        if (ShowEncodingDetails.IsChecked == true) ShowInActivityLog(line);
     }
 
     private void ShowEncodingDetails_Changed(object sender, RoutedEventArgs e)
@@ -978,13 +990,13 @@ public partial class MainWindow : Window
 
     private async void Inspect_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
-        EnsureProbe(); var r = await CaptureAsync(_ffprobe!, FfmpegCommandBuilder.Inspect(MediaPath.Text), CancellationToken.None); ToolsOutput.Text = r.StdOut + r.StdErr;
+        EnsureProbe(); var r = await CaptureLoggedAsync("Inspect", _ffprobe!, FfmpegCommandBuilder.Inspect(MediaPath.Text), CancellationToken.None); ToolsOutput.Text = r.StdOut + r.StdErr;
     });
 
     private async void Verify_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); ToolsOutput.Text = "Verifying every decodable frame…";
-        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Verify(MediaPath.Text), CancellationToken.None);
+        var r = await CaptureLoggedAsync("Verify", _ffmpeg!, FfmpegCommandBuilder.Verify(MediaPath.Text), CancellationToken.None);
         var report = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_verification.csv");
         var status = r.ExitCode == 0 ? "completed" : "failed";
         File.WriteAllText(report, "file,status,exit_code,notes\r\n" + CsvFormatter.Escape(MediaPath.Text) + $",{status},{r.ExitCode}," + CsvFormatter.Escape(r.StdErr));
@@ -994,25 +1006,33 @@ public partial class MainWindow : Window
     private async void Rewrap_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_rewrapped.mp4");
-        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Rewrap(MediaPath.Text, output), CancellationToken.None);
+        var r = await CaptureLoggedAsync("Rewrap", _ffmpeg!, FfmpegCommandBuilder.Rewrap(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
     private async void Proxy_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_proxy.mp4");
-        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.Proxy(MediaPath.Text, output), CancellationToken.None);
+        var r = await CaptureLoggedAsync("Proxy", _ffmpeg!, FfmpegCommandBuilder.Proxy(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
     private async void ContactSheet_Click(object sender, RoutedEventArgs e) => await ToolAction(async () =>
     {
         EnsureMedia(); EnsureFfmpeg(); var output = Path.Combine(Path.GetDirectoryName(MediaPath.Text)!, Path.GetFileNameWithoutExtension(MediaPath.Text) + "_contact-sheet.jpg");
-        var r = await CaptureAsync(_ffmpeg!, FfmpegCommandBuilder.ContactSheet(MediaPath.Text, output), CancellationToken.None);
+        var r = await CaptureLoggedAsync("ContactSheet", _ffmpeg!, FfmpegCommandBuilder.ContactSheet(MediaPath.Text, output), CancellationToken.None);
         ToolsOutput.Text = r.ExitCode == 0 ? $"Created: {output}" : r.StdErr;
     });
 
-    private async Task ToolAction(Func<Task> action) { try { await action(); } catch (Exception ex) { MessageBox.Show(ex.Message, "Media tool", MessageBoxButton.OK, MessageBoxImage.Error); } }
+    private async Task ToolAction(Func<Task> action)
+    {
+        try { await action(); }
+        catch (Exception ex)
+        {
+            _activityLogFile.TryAppend($"[App] Media tool action failed: {ex}");
+            MessageBox.Show(ex.Message, "Media tool", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
     private void EnsureMedia() { if (!File.Exists(MediaPath.Text)) throw new InvalidOperationException("Select a valid media file."); }
     private void EnsureFfmpeg() { if (_ffmpeg is null) throw new InvalidOperationException("FFmpeg was not found."); }
     private void EnsureProbe() { EnsureMedia(); if (_ffprobe is null) throw new InvalidOperationException("ffprobe.exe was not found beside FFmpeg or in PATH."); }
@@ -1036,5 +1056,16 @@ public partial class MainWindow : Window
         using var p = StartProcess(exe, args, true);
         var stdout = p.StandardOutput.ReadToEndAsync(token); var stderr = p.StandardError.ReadToEndAsync(token);
         await p.WaitForExitAsync(token); return (p.ExitCode, await stdout, await stderr);
+    }
+
+    private async Task<(int ExitCode, string StdOut, string StdErr)> CaptureLoggedAsync(string toolName, string exe, IEnumerable<string> args, CancellationToken token)
+    {
+        var argList = args as IReadOnlyList<string> ?? args.ToList();
+        _activityLogFile.TryAppend($"[App] {toolName}: {FormatCommand(exe, argList)}");
+        var result = await CaptureAsync(exe, argList, token);
+        if (!string.IsNullOrWhiteSpace(result.StdOut)) _activityLogFile.TryAppend($"[{toolName}] stdout: {result.StdOut.Trim()}");
+        if (!string.IsNullOrWhiteSpace(result.StdErr)) _activityLogFile.TryAppend($"[{toolName}] stderr: {result.StdErr.Trim()}");
+        if (result.ExitCode != 0) _activityLogFile.TryAppend($"[App] {toolName} exited with code {result.ExitCode}.");
+        return result;
     }
 }
