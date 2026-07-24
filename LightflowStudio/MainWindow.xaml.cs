@@ -6,6 +6,8 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using MessageBox = System.Windows.MessageBox;
@@ -25,8 +27,10 @@ public partial class MainWindow : Window
     private readonly EncodingPauseController _encodingPause = new();
     private readonly ObservableCollection<BatchFileOption> _batchFiles = [];
     private readonly BatchFileSelectionMemory _batchSelectionMemory = new();
+    private readonly ActivityLogFile _activityLogFile = ActivityLogFile.BesideSettings(AppSettingsStore.SettingsPath);
     private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private CancellationTokenSource? _batchMetadataCts;
+    private readonly Dictionary<ToggleButton, CancellationTokenSource> _requirementHelpDismissals = [];
     private Stopwatch? _batchStopwatch;
     private bool _closeAfterCurrent;
     private bool _forceClose;
@@ -81,6 +85,36 @@ public partial class MainWindow : Window
         StatusText.Text = report.IsReady ? "Encoding tools ready" : "Encoding setup needs attention — open Settings";
     }
 
+    private void RequirementHelp_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not ToggleButton button) return;
+        if (_requirementHelpDismissals.Remove(button, out var pending)) pending.Cancel();
+    }
+
+    private async void RequirementHelp_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not ToggleButton button || button.IsChecked != true) return;
+        if (_requirementHelpDismissals.Remove(button, out var pending)) pending.Cancel();
+        var dismissal = new CancellationTokenSource();
+        _requirementHelpDismissals[button] = dismissal;
+        try
+        {
+            await Task.Delay(900, dismissal.Token);
+            if (!button.IsMouseOver) button.IsChecked = false;
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (_requirementHelpDismissals.TryGetValue(button, out var current) && ReferenceEquals(current, dismissal))
+                _requirementHelpDismissals.Remove(button);
+            dismissal.Dispose();
+        }
+    }
+
+    private void RequirementHelpPopup_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ToggleButton button }) button.IsChecked = false;
+    }
     private async void CheckDependencies_Click(object sender, RoutedEventArgs e)
     {
         LocateTools(SettingsFfmpegPath.Text);
@@ -389,6 +423,7 @@ public partial class MainWindow : Window
             IncludeSubfolders = SettingsRecursive.IsChecked == true,
             PreserveFolderStructure = SettingsPreserveFolderStructure.IsChecked == true,
             OverwriteExistingFiles = SettingsOverwriteExisting.IsChecked == true,
+            DetailedActivityLogging = ShowEncodingDetails.IsChecked == true,
             EncodingPreset = selectedPreset,
             Encoding = encoding
         });
@@ -468,6 +503,7 @@ public partial class MainWindow : Window
         SettingsRecursive.IsChecked = settings.IncludeSubfolders;
         SettingsPreserveFolderStructure.IsChecked = settings.PreserveFolderStructure;
         SettingsOverwriteExisting.IsChecked = settings.OverwriteExistingFiles;
+        ShowEncodingDetails.IsChecked = settings.DetailedActivityLogging;
         SettingsEncodingPreset.SelectedIndex = (int)settings.EncodingPreset;
         PopulateEncodingControls(settings.Encoding);
     }
@@ -658,6 +694,7 @@ public partial class MainWindow : Window
                 {
                     _batchProgress.ReportFileProgress(p);
                     FileProgress.Value = _batchProgress.FilePercent;
+                    UpdateBatch(completed, total, batchStart, p);
                 }, _cts.Token);
                 if (exit == 0)
                 {
@@ -771,12 +808,14 @@ public partial class MainWindow : Window
             if (ReferenceEquals(_activeEncodingProcess, process)) _activeEncodingProcess = null;
         }
     }
-    private void UpdateBatch(int completed, int total, Stopwatch sw)
+    private void UpdateBatch(int completed, int total, Stopwatch sw, double currentFilePercent = 0)
     {
-        _batchProgress.ReportBatchProgress(completed, total);
+        _batchProgress.ReportBatchProgress(completed + Math.Clamp(currentFilePercent, 0, 100) / 100d, total);
         BatchProgress.Value = _batchProgress.BatchPercent;
-        var remaining = completed == 0 ? TimeSpan.Zero : TimeSpan.FromTicks(sw.Elapsed.Ticks * (total - completed) / completed);
-        EtaText.Text = $"Completed {completed} of {total} — estimated remaining: {remaining:hh\\:mm\\:ss}";
+        var remaining = BatchEtaEstimator.Estimate(sw.Elapsed, completed, total, currentFilePercent);
+        EtaText.Text = remaining is null
+            ? $"Completed {completed} of {total} — estimated remaining: calculating…"
+            : $"Completed {completed} of {total} — estimated remaining: {remaining:hh\\:mm\\:ss}";
     }
     private void ApplyProgressState()
     {
@@ -786,6 +825,7 @@ public partial class MainWindow : Window
     }
     private void ToggleEncoding(bool running)
     {
+        BatchConfiguration.IsEnabled = !running;
         if (running) StartButton.IsEnabled = false;
         else UpdateBatchReadiness(updateGuidance: false);
         CancelButton.IsEnabled = running;
@@ -891,6 +931,7 @@ public partial class MainWindow : Window
     }
     private void AppendLog(string text)
     {
+        _activityLogFile.TryAppend(text);
         Dispatcher.Invoke(() =>
         {
             LogBox.Text = ActivityLog.Append(LogBox.Text, text);
@@ -904,6 +945,19 @@ public partial class MainWindow : Window
         if (ShowEncodingDetails.IsChecked == true) AppendLog($"[App] {text}");
     }
 
+    private void ShowEncodingDetails_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        _settings = _settings with { DetailedActivityLogging = ShowEncodingDetails.IsChecked == true };
+        try
+        {
+            AppSettingsStore.Save(AppSettingsStore.SettingsPath, _settings);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppendLog($"Could not save the encoding-details preference: {ex.Message}");
+        }
+    }
     private static string FormatDuration(double seconds) =>
         seconds > 0 ? TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss\.fff") : "Unavailable";
 

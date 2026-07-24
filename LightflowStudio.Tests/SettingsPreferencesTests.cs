@@ -21,6 +21,7 @@ public sealed class SettingsPreferencesTests : IDisposable
             IncludeSubfolders = true,
             PreserveFolderStructure = false,
             OverwriteExistingFiles = true,
+            DetailedActivityLogging = true,
             EncodingPreset = EncodingPreset.EfficientHevc,
             Encoding = EncodingPresetCatalog.Get(EncodingPreset.EfficientHevc) with
             {
@@ -52,6 +53,7 @@ public sealed class SettingsPreferencesTests : IDisposable
         Assert.False(settings.IncludeSubfolders);
         Assert.True(settings.PreserveFolderStructure);
         Assert.False(settings.OverwriteExistingFiles);
+        Assert.False(settings.DetailedActivityLogging);
     }
 
     [Fact]
