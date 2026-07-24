@@ -13,6 +13,7 @@ internal sealed record AppSettings
     public bool IncludeSubfolders { get; init; }
     public bool PreserveFolderStructure { get; init; } = true;
     public bool OverwriteExistingFiles { get; init; }
+    public bool DetailedActivityLogging { get; init; }
     public EncodingPreset EncodingPreset { get; init; } = EncodingPreset.Recommended;
     public EncodingOptions Encoding { get; init; } = EncodingPresetCatalog.Recommended;
 

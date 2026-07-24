@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private readonly EncodingPauseController _encodingPause = new();
     private readonly ObservableCollection<BatchFileOption> _batchFiles = [];
     private readonly BatchFileSelectionMemory _batchSelectionMemory = new();
+    private readonly ActivityLogFile _activityLogFile = ActivityLogFile.BesideSettings(AppSettingsStore.SettingsPath);
     private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private CancellationTokenSource? _batchMetadataCts;
     private Stopwatch? _batchStopwatch;
@@ -389,6 +390,7 @@ public partial class MainWindow : Window
             IncludeSubfolders = SettingsRecursive.IsChecked == true,
             PreserveFolderStructure = SettingsPreserveFolderStructure.IsChecked == true,
             OverwriteExistingFiles = SettingsOverwriteExisting.IsChecked == true,
+            DetailedActivityLogging = ShowEncodingDetails.IsChecked == true,
             EncodingPreset = selectedPreset,
             Encoding = encoding
         });
@@ -468,6 +470,7 @@ public partial class MainWindow : Window
         SettingsRecursive.IsChecked = settings.IncludeSubfolders;
         SettingsPreserveFolderStructure.IsChecked = settings.PreserveFolderStructure;
         SettingsOverwriteExisting.IsChecked = settings.OverwriteExistingFiles;
+        ShowEncodingDetails.IsChecked = settings.DetailedActivityLogging;
         SettingsEncodingPreset.SelectedIndex = (int)settings.EncodingPreset;
         PopulateEncodingControls(settings.Encoding);
     }
@@ -891,6 +894,7 @@ public partial class MainWindow : Window
     }
     private void AppendLog(string text)
     {
+        _activityLogFile.TryAppend(text);
         Dispatcher.Invoke(() =>
         {
             LogBox.Text = ActivityLog.Append(LogBox.Text, text);
@@ -904,6 +908,19 @@ public partial class MainWindow : Window
         if (ShowEncodingDetails.IsChecked == true) AppendLog($"[App] {text}");
     }
 
+    private void ShowEncodingDetails_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        _settings = _settings with { DetailedActivityLogging = ShowEncodingDetails.IsChecked == true };
+        try
+        {
+            AppSettingsStore.Save(AppSettingsStore.SettingsPath, _settings);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppendLog($"Could not save the encoding-details preference: {ex.Message}");
+        }
+    }
     private static string FormatDuration(double seconds) =>
         seconds > 0 ? TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss\.fff") : "Unavailable";
 
