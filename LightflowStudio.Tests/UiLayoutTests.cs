@@ -95,6 +95,17 @@ public class UiLayoutTests
         Assert.Contains(document.Descendants(ns + "Popup"), popup =>
             ((string?)popup.Attribute("IsOpen"))?.Contains("RequirementHelpButton") == true);
     }
+
+    [Fact]
+    public void BatchConfiguration_IsNamedForEncodingStateControl()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var configuration = Named(document, "BatchConfiguration");
+        var source = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml.cs"));
+
+        Assert.Equal("1", (string?)configuration.Attribute("Grid.Row"));
+        Assert.Contains("BatchConfiguration.IsEnabled = !running;", source);
+    }
     private static XElement Named(XDocument document, string name) =>
         document.Descendants().Single(element => element.Attributes().Any(attribute =>
             attribute.Name.LocalName == "Name" && attribute.Value == name));
