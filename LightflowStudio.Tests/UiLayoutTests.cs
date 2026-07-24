@@ -79,6 +79,18 @@ public class UiLayoutTests
 
         Assert.True(double.Parse((string?)document.Root!.Attribute("MinWidth") ?? "0") >= 1120);
     }
+    [Fact]
+    public void PhotographyBranding_IsNotRepeatedInTheStatusBar()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var statusText = Named(document, "StatusText");
+        var statusBar = statusText.Parent!;
+
+        Assert.DoesNotContain(statusBar.Descendants(), element =>
+            (string?)element.Attribute("Text") == "JEREMY RUNNING PHOTOGRAPHY");
+        Assert.Contains(document.Descendants(), element =>
+            (string?)element.Attribute("Text") == "JEREMY RUNNING PHOTOGRAPHY");
+    }
     private static XElement Named(XDocument document, string name) =>
         document.Descendants().Single(element => element.Attributes().Any(attribute =>
             attribute.Name.LocalName == "Name" && attribute.Value == name));
