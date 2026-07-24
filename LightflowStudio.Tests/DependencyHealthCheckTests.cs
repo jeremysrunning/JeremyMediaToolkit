@@ -40,6 +40,15 @@ public sealed class DependencyHealthCheckTests : IDisposable
         Assert.False(report.Items.Single(item => item.Name == "FFprobe").IsReady); Assert.Contains("could not be started", report.Items.Single(item => item.Name == "FFprobe").Summary);
     }
 
+    [Fact]
+    public async Task RunAsync_ProvidesResolutionGuidanceForEveryRequirement()
+    {
+        var report = await DependencyHealthCheck.RunAsync(null, null);
+
+        Assert.All(report.Items, item => Assert.False(string.IsNullOrWhiteSpace(item.Resolution)));
+        Assert.Contains("Open Settings", report.Items.Single(item => item.Name == "FFmpeg").Resolution);
+        Assert.Contains("NVIDIA", report.Items.Single(item => item.Name == "H.264 NVIDIA encoder").Resolution);
+    }
     private string CreateExecutable(string name) { var path = Path.Combine(_root, name); File.WriteAllText(path, "test"); return path; }
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }

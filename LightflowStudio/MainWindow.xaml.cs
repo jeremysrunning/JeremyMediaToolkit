@@ -6,6 +6,8 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using MessageBox = System.Windows.MessageBox;
@@ -27,6 +29,7 @@ public partial class MainWindow : Window
     private readonly BatchFileSelectionMemory _batchSelectionMemory = new();
     private readonly DispatcherTimer _batchFolderRefreshTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private CancellationTokenSource? _batchMetadataCts;
+    private readonly Dictionary<ToggleButton, CancellationTokenSource> _requirementHelpDismissals = [];
     private Stopwatch? _batchStopwatch;
     private bool _closeAfterCurrent;
     private bool _forceClose;
@@ -81,6 +84,36 @@ public partial class MainWindow : Window
         StatusText.Text = report.IsReady ? "Encoding tools ready" : "Encoding setup needs attention — open Settings";
     }
 
+    private void RequirementHelp_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not ToggleButton button) return;
+        if (_requirementHelpDismissals.Remove(button, out var pending)) pending.Cancel();
+    }
+
+    private async void RequirementHelp_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (sender is not ToggleButton button || button.IsChecked != true) return;
+        if (_requirementHelpDismissals.Remove(button, out var pending)) pending.Cancel();
+        var dismissal = new CancellationTokenSource();
+        _requirementHelpDismissals[button] = dismissal;
+        try
+        {
+            await Task.Delay(900, dismissal.Token);
+            if (!button.IsMouseOver) button.IsChecked = false;
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (_requirementHelpDismissals.TryGetValue(button, out var current) && ReferenceEquals(current, dismissal))
+                _requirementHelpDismissals.Remove(button);
+            dismissal.Dispose();
+        }
+    }
+
+    private void RequirementHelpPopup_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ToggleButton button }) button.IsChecked = false;
+    }
     private async void CheckDependencies_Click(object sender, RoutedEventArgs e)
     {
         LocateTools(SettingsFfmpegPath.Text);

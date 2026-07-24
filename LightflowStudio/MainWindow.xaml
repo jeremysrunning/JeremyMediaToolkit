@@ -275,14 +275,22 @@
       <StackPanel>
        <DockPanel Margin="4,0,4,12">
         <Button DockPanel.Dock="Right" Padding="12,6" Content="Check Again" Click="CheckDependencies_Click"/>
-        <StackPanel><TextBlock Style="{StaticResource SectionTitle}" Text="Encoding Readiness"/><TextBlock x:Name="DependencySummary" Margin="0,4,0,0" Foreground="{StaticResource MutedTextBrush}" Text="Checking the tools needed for encoding…"/></StackPanel>
+        <StackPanel><TextBlock Style="{StaticResource SectionTitle}" Text="Encoding Requirements"/><TextBlock x:Name="DependencySummary" Margin="0,4,0,0" Foreground="{StaticResource MutedTextBrush}" Text="Checking the tools needed for encoding…"/></StackPanel>
        </DockPanel>
        <ItemsControl x:Name="DependencyResults" Margin="4,0,4,12">
         <ItemsControl.ItemTemplate><DataTemplate>
-         <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="190"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+         <Grid Margin="0,3"><Grid.ColumnDefinitions><ColumnDefinition Width="22"/><ColumnDefinition Width="190"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <Ellipse Width="9" Height="9" HorizontalAlignment="Left" VerticalAlignment="Center"><Ellipse.Style><Style TargetType="Ellipse"><Setter Property="Fill" Value="{StaticResource WarningBrush}"/><Style.Triggers><DataTrigger Binding="{Binding IsReady}" Value="True"><Setter Property="Fill" Value="{StaticResource SuccessBrush}"/></DataTrigger></Style.Triggers></Style></Ellipse.Style></Ellipse>
           <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Text="{Binding Name}"/>
           <TextBlock Grid.Column="2" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Text="{Binding Summary}" ToolTip="{Binding Detail}"/>
+          <ToggleButton Grid.Column="3" x:Name="RequirementHelpButton" Style="{StaticResource RequirementInfoButton}" Content="i"
+           MouseEnter="RequirementHelp_MouseEnter" MouseLeave="RequirementHelp_MouseLeave"/>
+          <Popup IsOpen="{Binding IsChecked, ElementName=RequirementHelpButton, Mode=TwoWay}" PlacementTarget="{Binding ElementName=RequirementHelpButton}" Placement="Right" HorizontalOffset="8" AllowsTransparency="True" StaysOpen="True">
+           <Border Width="340" Padding="14" Background="#20242C" BorderBrush="#596270" BorderThickness="1" CornerRadius="8"
+            Tag="{Binding ElementName=RequirementHelpButton}" MouseLeftButtonUp="RequirementHelpPopup_Click">
+            <StackPanel><TextBlock Foreground="{StaticResource TextBrush}" FontWeight="SemiBold" Text="{Binding Name}"/><TextBlock Margin="0,6,0,0" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" Text="{Binding Resolution}"/><TextBlock Margin="0,7,0,0" Foreground="#7F8998" FontSize="11" TextWrapping="Wrap" Text="{Binding Detail}"/></StackPanel>
+           </Border>
+          </Popup>
          </Grid>
         </DataTemplate></ItemsControl.ItemTemplate>
        </ItemsControl>
