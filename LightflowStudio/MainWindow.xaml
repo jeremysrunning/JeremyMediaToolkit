@@ -42,7 +42,7 @@
        <TextBlock Style="{StaticResource PageSubtitle}" Margin="0,5,0,0" Text="Apply a LUT and create consistent, edit-ready H.264 files from an entire folder."/>
       </StackPanel>
 
-      <Border Grid.Row="1" Style="{StaticResource Card}">
+      <Border Grid.Row="1" x:Name="BatchConfiguration" Style="{StaticResource Card}">
        <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
