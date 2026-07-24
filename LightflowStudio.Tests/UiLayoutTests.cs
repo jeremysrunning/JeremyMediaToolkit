@@ -79,6 +79,33 @@ public class UiLayoutTests
 
         Assert.True(double.Parse((string?)document.Root!.Attribute("MinWidth") ?? "0") >= 1120);
     }
+    [Fact]
+    public void EncodingRequirements_UseAnchoredActionableHelp()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var ns = document.Root!.Name.Namespace;
+
+        Assert.Contains(document.Descendants(ns + "TextBlock"), element =>
+            (string?)element.Attribute("Text") == "Encoding Requirements");
+        Assert.DoesNotContain(document.Descendants(ns + "TextBlock"), element =>
+            (string?)element.Attribute("Text") == "Encoding Readiness");
+        var button = document.Descendants(ns + "ToggleButton").Single(element =>
+            (string?)element.Attribute(XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml") + "Name") == "RequirementHelpButton");
+        Assert.Equal("RequirementHelp_MouseLeave", (string?)button.Attribute("MouseLeave"));
+        Assert.Contains(document.Descendants(ns + "Popup"), popup =>
+            ((string?)popup.Attribute("IsOpen"))?.Contains("RequirementHelpButton") == true);
+    }
+
+    [Fact]
+    public void BatchConfiguration_IsNamedForEncodingStateControl()
+    {
+        var document = XDocument.Load(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml"));
+        var configuration = Named(document, "BatchConfiguration");
+        var source = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "LightflowStudio", "MainWindow.xaml.cs"));
+
+        Assert.Equal("1", (string?)configuration.Attribute("Grid.Row"));
+        Assert.Contains("BatchConfiguration.IsEnabled = !running;", source);
+    }
     private static XElement Named(XDocument document, string name) =>
         document.Descendants().Single(element => element.Attributes().Any(attribute =>
             attribute.Name.LocalName == "Name" && attribute.Value == name));
