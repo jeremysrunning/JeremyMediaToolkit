@@ -18,7 +18,7 @@ internal sealed class BatchProgressState
 
     public void ReportFileProgress(double percent) => FilePercent = Math.Clamp(percent, 0, 100);
 
-    public void ReportBatchProgress(int completed, int total)
+    public void ReportBatchProgress(double completed, int total)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(total);
         BatchPercent = Math.Clamp(completed * 100d / total, 0, 100);

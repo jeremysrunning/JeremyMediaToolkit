@@ -658,6 +658,7 @@ public partial class MainWindow : Window
                 {
                     _batchProgress.ReportFileProgress(p);
                     FileProgress.Value = _batchProgress.FilePercent;
+                    UpdateBatch(completed, total, batchStart, p);
                 }, _cts.Token);
                 if (exit == 0)
                 {
@@ -771,12 +772,14 @@ public partial class MainWindow : Window
             if (ReferenceEquals(_activeEncodingProcess, process)) _activeEncodingProcess = null;
         }
     }
-    private void UpdateBatch(int completed, int total, Stopwatch sw)
+    private void UpdateBatch(int completed, int total, Stopwatch sw, double currentFilePercent = 0)
     {
-        _batchProgress.ReportBatchProgress(completed, total);
+        _batchProgress.ReportBatchProgress(completed + Math.Clamp(currentFilePercent, 0, 100) / 100d, total);
         BatchProgress.Value = _batchProgress.BatchPercent;
-        var remaining = completed == 0 ? TimeSpan.Zero : TimeSpan.FromTicks(sw.Elapsed.Ticks * (total - completed) / completed);
-        EtaText.Text = $"Completed {completed} of {total} — estimated remaining: {remaining:hh\\:mm\\:ss}";
+        var remaining = BatchEtaEstimator.Estimate(sw.Elapsed, completed, total, currentFilePercent);
+        EtaText.Text = remaining is null
+            ? $"Completed {completed} of {total} — estimated remaining: calculating…"
+            : $"Completed {completed} of {total} — estimated remaining: {remaining:hh\\:mm\\:ss}";
     }
     private void ApplyProgressState()
     {
