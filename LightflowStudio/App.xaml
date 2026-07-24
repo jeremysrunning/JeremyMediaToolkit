@@ -101,6 +101,21 @@
     </Setter.Value>
    </Setter>
   </Style>
+  <Style x:Key="RequirementInfoButton" TargetType="ToggleButton">
+   <Setter Property="Width" Value="24"/><Setter Property="Height" Value="24"/><Setter Property="Margin" Value="6,0,0,0"/>
+   <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}"/><Setter Property="Background" Value="Transparent"/>
+   <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/><Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="ToolTip" Value="How do I resolve this requirement?"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton">
+    <Border x:Name="InfoChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12">
+     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Text="i"/>
+    </Border>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="InfoChrome" Property="BorderBrush" Value="{StaticResource OrangeBrush}"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Trigger>
+     <Trigger Property="IsChecked" Value="True"><Setter TargetName="InfoChrome" Property="Background" Value="#2B181D"/><Setter TargetName="InfoChrome" Property="BorderBrush" Value="{StaticResource OrangeBrush}"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
   <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
    <Setter Property="Background" Value="{StaticResource BrandGradient}"/>
    <Setter Property="BorderBrush" Value="#FFFFA069"/>

@@ -5,7 +5,7 @@ namespace LightflowStudio;
 
 internal enum DependencyHealth { Ready, NeedsAttention }
 
-internal sealed record DependencyCheckItem(string Name, DependencyHealth Health, string Summary, string Detail)
+internal sealed record DependencyCheckItem(string Name, DependencyHealth Health, string Summary, string Detail, string Resolution)
 {
     public bool IsReady => Health == DependencyHealth.Ready;
 }
@@ -24,9 +24,9 @@ internal static class DependencyHealthCheck
     {
         run ??= RunProcessAsync;
         var items = new List<DependencyCheckItem>();
-        var ffmpegReady = await CheckExecutableAsync("FFmpeg", ffmpeg, ["-hide_banner", "-version"], "FFmpeg is available.", "FFmpeg could not be started. Choose a working ffmpeg.exe in Settings.", run, token);
+        var ffmpegReady = await CheckExecutableAsync("FFmpeg", ffmpeg, ["-hide_banner", "-version"], "FFmpeg is available.", "FFmpeg could not be started.", "Open Settings and choose a working ffmpeg.exe, or reinstall Lightflow Studio to restore the bundled copy.", run, token);
         items.Add(ffmpegReady);
-        items.Add(await CheckExecutableAsync("FFprobe", ffprobe, ["-hide_banner", "-version"], "Media file details are available.", "FFprobe is missing or could not be started. Place ffprobe.exe beside FFmpeg.", run, token));
+        items.Add(await CheckExecutableAsync("FFprobe", ffprobe, ["-hide_banner", "-version"], "Media file details are available.", "FFprobe is missing or could not be started.", "Place ffprobe.exe beside the selected FFmpeg executable, or reinstall Lightflow Studio to restore the bundled copy.", run, token));
 
         if (!ffmpegReady.IsReady || string.IsNullOrWhiteSpace(ffmpeg))
         {
@@ -41,20 +41,20 @@ internal static class DependencyHealthCheck
     }
 
     private static async Task<DependencyCheckItem> CheckExecutableAsync(string name, string? path, IReadOnlyList<string> arguments,
-        string readySummary, string unavailableSummary,
+        string readySummary, string unavailableSummary, string resolution,
         Func<string, IReadOnlyList<string>, CancellationToken, Task<(int ExitCode, string StdOut, string StdErr)>> run, CancellationToken token)
     {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return new(name, DependencyHealth.NeedsAttention, unavailableSummary, path ?? "No executable was found.");
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return new(name, DependencyHealth.NeedsAttention, unavailableSummary, path ?? "No executable was found.", resolution);
         try
         {
             var result = await run(path, arguments, token);
             return result.ExitCode == 0
-                ? new(name, DependencyHealth.Ready, readySummary, FirstLine(result.StdOut + result.StdErr, path))
-                : new(name, DependencyHealth.NeedsAttention, unavailableSummary, $"The check exited with code {result.ExitCode}.");
+                ? new(name, DependencyHealth.Ready, readySummary, FirstLine(result.StdOut + result.StdErr, path), "No action is needed.")
+                : new(name, DependencyHealth.NeedsAttention, unavailableSummary, $"The check exited with code {result.ExitCode}.", resolution);
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            return new(name, DependencyHealth.NeedsAttention, unavailableSummary, ex.Message);
+            return new(name, DependencyHealth.NeedsAttention, unavailableSummary, ex.Message, resolution);
         }
     }
 
@@ -65,15 +65,15 @@ internal static class DependencyHealthCheck
         {
             var result = await run(ffmpeg, ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=size=128x128:rate=1", "-frames:v", "1", "-c:v", encoder, "-f", "null", "-"], token);
             return result.ExitCode == 0
-                ? new(name, DependencyHealth.Ready, "Available for encoding.", $"{encoder} successfully started.")
-                : new(name, DependencyHealth.NeedsAttention, "Could not start on this computer.", FirstLine(result.StdErr + result.StdOut, "The encoder test failed."));
+                ? new(name, DependencyHealth.Ready, "Available for encoding.", $"{encoder} successfully started.", "No action is needed.")
+                : new(name, DependencyHealth.NeedsAttention, "Could not start on this computer.", FirstLine(result.StdErr + result.StdOut, "The encoder test failed."), "Install a current NVIDIA graphics driver and confirm that this computer has a supported NVIDIA GPU.");
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            return new(name, DependencyHealth.NeedsAttention, "Could not start on this computer.", ex.Message);
+            return new(name, DependencyHealth.NeedsAttention, "Could not start on this computer.", ex.Message, "Install a current NVIDIA graphics driver and confirm that this computer has a supported NVIDIA GPU.");
         }
     }
-    private static DependencyCheckItem EncoderUnavailable(string name) => new(name, DependencyHealth.NeedsAttention, "Not available in the selected FFmpeg build.", "Use an FFmpeg build that includes NVIDIA NVENC support and install a current NVIDIA graphics driver.");
+    private static DependencyCheckItem EncoderUnavailable(string name) => new(name, DependencyHealth.NeedsAttention, "Not available in the selected FFmpeg build.", "The selected FFmpeg build could not be tested for this encoder.", "Use an FFmpeg build that includes NVIDIA NVENC support and install a current NVIDIA graphics driver.");
     private static string FirstLine(string output, string fallback) => output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? fallback;
 
     private static async Task<(int ExitCode, string StdOut, string StdErr)> RunProcessAsync(string executable, IReadOnlyList<string> arguments, CancellationToken token)
